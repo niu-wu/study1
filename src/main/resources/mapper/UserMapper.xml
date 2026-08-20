@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.study11.dao.UserDao">
+
+    <select id="findList" resultType="com.example.study11.entity.po.UserPo">
+        SELECT id, username, password, created_at, updatetime, email, phone, birthday,
+               status, is_deleted
+        FROM `user`
+        WHERE is_deleted = 0
+        ORDER BY id DESC
+    </select>
+
+    <insert id="insert" parameterType="com.example.study11.entity.po.UserPo"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO `user` (username, password, created_at, updatetime, email, phone, birthday,
+                            status, is_deleted)
+        VALUES (#{username}, #{password}, #{createdAt}, #{updatetime}, #{email}, #{phone},
+                #{birthday}, #{status}, #{isDeleted})
+    </insert>
+
+    <select id="selectByUserName" resultType="com.example.study11.entity.po.UserPo">
+        SELECT id, username, password, created_at, updatetime, email, phone, birthday,
+               status, is_deleted
+        FROM `user`
+        WHERE username = #{username}
+        LIMIT 1
+    </select>
+
+    <select id="selectUserById" resultType="com.example.study11.entity.po.UserPo">
+        SELECT id, username, password, created_at, updatetime, email, phone, birthday,
+               status, is_deleted
+        FROM `user`
+        WHERE id = #{id}
+    </select>
+
+    <update id="updateUserById" parameterType="com.example.study11.entity.po.UserPo">
+        UPDATE `user`
+        SET username   = #{username},
+            status     = #{status},
+            updatetime = #{updatetime},
+            email      = #{email},
+            phone      = #{phone},
+            birthday   = #{birthday}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 修改密码只更新密码和时间，并限制为未逻辑删除的用户。 -->
+    <update id="updatePasswordById" parameterType="com.example.study11.entity.po.UserPo">
+        UPDATE `user`
+        SET password   = #{password},
+            updatetime = #{updatetime}
+        WHERE id = #{id}
+          AND is_deleted = 0
+    </update>
+
+
+    <update id="updateUserIsDeleted">
+        UPDATE `user`
+        SET is_deleted = #{isDeleted}
+        WHERE id = #{id}
+    </update>
+
+</mapper>

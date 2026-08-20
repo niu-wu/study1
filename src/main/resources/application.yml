@@ -1,0 +1,68 @@
+# 应用配置
+spring:
+  application:
+    name: study1-1
+  # 数据源配置(本地环境)
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/study11?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+    username: root
+    password: 123456
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password:
+      database: 0
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+
+  # 邮件服务器通过环境变量注入，不能把真实账号和密码提交到代码库。
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: ${MAIL_SMTP_AUTH:true}
+      mail.smtp.starttls.enable: ${MAIL_SMTP_STARTTLS:true}
+      mail.smtp.connectiontimeout: ${MAIL_SMTP_CONNECTION_TIMEOUT:5000}
+      mail.smtp.timeout: ${MAIL_SMTP_TIMEOUT:5000}
+      mail.smtp.writetimeout: ${MAIL_SMTP_WRITE_TIMEOUT:5000}
+
+# MyBatis 配置
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.example.study11.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# 日志配置
+logging:
+  level:
+    com.example.study11: debug
+
+# 服务器配置
+server:
+  port: 8080
+
+# 登录配置
+sso:
+  secret: "0000000000000000"
+  login-flag: true
+  token-expire-seconds: 1800
+
+# 修改密码配置。SMTP 账号、密码等敏感信息请通过环境变量或外部配置注入。
+password:
+  change:
+    max-wrong-attempts: 6
+    captcha-threshold: 3
+    max-daily-changes: 3
+    captcha-expire-seconds: 300
+    mail-from: "${PASSWORD_MAIL_FROM:}"
