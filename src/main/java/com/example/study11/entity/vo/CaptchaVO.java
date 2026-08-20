@@ -5,7 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 图形验证码响应。
+ * 图形验证码响应
  *
  * <p>图片以 data URI 返回，前端无需再拼接文件地址；验证码答案只保存在服务端 Redis，
  * 不会出现在响应中。</p>

@@ -30,7 +30,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 修改密码业务实现。
+ * 修改密码业务实现
  *
  * <p>所有数据库操作都通过 {@link UserDao} 完成。Redis 只保存每日计数和验证码，
  * 不保存密码。业务流程先完成所有校验，只有旧密码正确且最终确认后才更新数据库。</p>
@@ -73,7 +73,7 @@ public class PasswordChangeServiceImpl implements PasswordChangeService {
     private final PasswordEncoder passwordEncoder;
 
     /**
-     * 创建修改密码业务对象。
+     * 创建修改密码业务对象
      */
     public PasswordChangeServiceImpl(UserDao userDao,
                                      StringRedisTemplate stringRedisTemplate,
@@ -92,8 +92,8 @@ public class PasswordChangeServiceImpl implements PasswordChangeService {
     }
 
     /**
-     * 固定数量的锁条带，避免按用户 ID 无限增长的锁表造成长期内存泄漏。
-     * Redis 计数仍是跨实例的最终计数来源；集群部署应在网关或 Redis 层配置互斥策略。
+     * 固定数量的锁条带，避免按用户 ID 无限增长的锁表造成长期内存泄漏
+     * Redis 计数仍是跨实例的最终计数来源；集群部署应在网关或 Redis 层配置互斥策略
      */
     private static final Object[] USER_LOCK_STRIPES = createLockStripes();
 
@@ -113,8 +113,8 @@ public class PasswordChangeServiceImpl implements PasswordChangeService {
     }
 
     /**
-     * 使用 Redis NX 锁覆盖完整业务流程，避免集群节点同时读到同一个旧计数。
-     * 单元测试中的 mock 若返回 null，则退回固定锁；真实 Redis 会返回明确的 true/false。
+     * 使用 Redis NX 锁覆盖完整业务流程，避免集群节点同时读到同一个旧计数
+     * 单元测试中的 mock 若返回 null，则退回固定锁；真实 Redis 会返回明确的 true/false
      */
     private void runWithRedisUserLock(Integer userId, ChangePasswordDTO request, String clientIp) {
         String lockKey = LOCK_PREFIX + userId;
@@ -128,7 +128,7 @@ public class PasswordChangeServiceImpl implements PasswordChangeService {
                         "修改密码请求正在处理中，请稍后再试",
                         Map.of("code", "PASSWORD_CHANGE_IN_PROGRESS"));
             }
-            // null 仅作为测试/兼容实现的本机锁回退；真实 Redis 脚本会返回 1 或 0。
+            // null 仅作为测试/兼容实现的本机锁回退；真实 Redis 脚本会返回 1 或 0
             redisLockAcquired = Long.valueOf(1L).equals(acquired);
             changePasswordLocked(userId, request, clientIp);
         } catch (ApiException e) {
@@ -150,13 +150,13 @@ public class PasswordChangeServiceImpl implements PasswordChangeService {
             stringRedisTemplate.execute(RELEASE_LOCK_SCRIPT,
                     List.of(lockKey), lockToken);
         } catch (RuntimeException e) {
-            // 锁带有短 TTL，释放失败不会影响本次已经完成的结果。
+            // 锁带有短 TTL，释放失败不会影响本次已经完成的结果
             log.warn("释放密码修改 Redis 锁失败: key={}", lockKey, e);
         }
     }
 
     /**
-     * 在用户锁内执行修改流程，确保计数检查、密码校验和计数更新顺序稳定。
+     * 在用户锁内执行修改流程，确保计数检查、密码校验和计数更新顺序稳定
      */
     private void changePasswordLocked(Integer userId, ChangePasswordDTO request, String clientIp) {
         // 二次验证是最后一次确认，后端不能只依赖前端弹窗状态。
@@ -164,7 +164,7 @@ public class PasswordChangeServiceImpl implements PasswordChangeService {
             throw businessException(HttpStatus.BAD_REQUEST, "未确认修改密码", CODE_CONFIRM_REQUIRED);
         }
 
-        // 新密码格式和两次输入一致性在任何计数变更前校验，避免无效请求消耗次数。
+        // 新密码格式和两次输入一致性在任何计数变更前校验，避免无效请求消耗次数
         if (!Objects.equals(request.getNewPassword(), request.getConfirmPassword())) {
             throw businessException(HttpStatus.BAD_REQUEST, "两次输入的新密码不一致", CODE_POLICY_INVALID);
         }
@@ -188,7 +188,7 @@ public class PasswordChangeServiceImpl implements PasswordChangeService {
         int captchaThreshold = nonNegativeOrDefault(passwordConfig == null
                 ? 0 : passwordConfig.getCaptchaThreshold(), 3);
 
-        // 每日成功次数达到上限时，不再继续校验密码，避免无意义地暴露校验结果。
+        // 每日成功次数达到上限时，不再继续校验密码，避免无意义地暴露校验结果
         int successCount = readCounter(successKey);
         if (successCount >= maxDailyChanges) {
             throw businessException(HttpStatus.TOO_MANY_REQUESTS,
@@ -196,13 +196,13 @@ public class PasswordChangeServiceImpl implements PasswordChangeService {
         }
 
         int wrongCount = readCounter(wrongKey);
-        // count=6 表示前六次已经用完，因此第七次请求必须直接拒绝。
+        // count=6 表示前六次已经用完，因此第七次请求必须直接拒绝
         if (wrongCount >= maxWrongAttempts) {
             throw businessException(HttpStatus.FORBIDDEN,
                     "旧密码错误次数已达上限，请明日再试", CODE_WRONG_LIMIT);
         }
 
-        // 已有三次失败记录时，当前请求就是第 4 次，必须先通过图形验证码。
+        // 已有三次失败记录时，当前请求就是第 4 次，必须先通过图形验证码
         if (wrongCount >= captchaThreshold) {
             boolean captchaValid = captchaService != null
                     && captchaService.validate(userId, request.getCaptchaId(), request.getCaptchaCode());
@@ -221,7 +221,7 @@ public class PasswordChangeServiceImpl implements PasswordChangeService {
                     currentCount >= maxWrongAttempts ? CODE_WRONG_LIMIT : "OLD_PASSWORD_INVALID");
         }
 
-        // 通知只能接收修改前快照，避免把新密码或变更后的字段误传给通知实现。
+        // 通知只能接收修改前快照，避免把新密码或变更后的字段误传给通知实现
         UserPo notificationUser = copyUser(user);
         String encodedPassword = encodePassword(request.getNewPassword());
         user.setPassword(encodedPassword);
@@ -233,7 +233,7 @@ public class PasswordChangeServiceImpl implements PasswordChangeService {
                     Map.of("code", "PASSWORD_UPDATE_CONFLICT"));
         }
 
-        // 数据库更新成功后再增加成功次数；旧密码错误次数按当天累计，不因成功修改而重置。
+        // 数据库更新成功后再增加成功次数；旧密码错误次数按当天累计，不因成功修改而重置
         incrementCounter(successKey, successCount);
 
         LocalDateTime changedAt = LocalDateTime.now(BUSINESS_ZONE);
@@ -249,14 +249,14 @@ public class PasswordChangeServiceImpl implements PasswordChangeService {
     }
 
     /**
-     * 兼容历史明文账号，同时优先使用 BCrypt 校验新账号。
+     * 兼容历史明文账号，同时优先使用 BCrypt 校验新账号
      */
     private boolean passwordMatches(String rawPassword, String storedPassword) {
         if (rawPassword == null || storedPassword == null) {
             return false;
         }
         if (looksLikeBcrypt(storedPassword)) {
-            // BCrypt 摘要永远不能走明文回退，即使调用方把整段摘要当作输入也必须失败。
+            // BCrypt 摘要永远不能走明文回退，即使调用方把整段摘要当作输入也必须失败
             if (passwordEncoder == null) {
                 return false;
             }
@@ -278,7 +278,7 @@ public class PasswordChangeServiceImpl implements PasswordChangeService {
     }
 
     /**
-     * 生成新密码摘要；测试或迁移场景没有编码器时保留明文兼容路径。
+     * 生成新密码摘要；测试或迁移场景没有编码器时保留明文兼容路径
      */
     private String encodePassword(String rawPassword) {
         if (passwordEncoder == null) {
@@ -288,7 +288,7 @@ public class PasswordChangeServiceImpl implements PasswordChangeService {
     }
 
     /**
-     * 读取 Redis 计数，空值表示当天尚未产生记录，非法值视为 Redis 故障而不是绕过限制。
+     * 读取 Redis 计数，空值表示当天尚未产生记录，非法值视为 Redis 故障而不是绕过限制
      */
     private int readCounter(String key) {
         try {
@@ -313,7 +313,7 @@ public class PasswordChangeServiceImpl implements PasswordChangeService {
     }
 
     /**
-     * 原子增加计数，并把过期时间设置到上海时区次日零点。
+     * 原子增加计数，并把过期时间设置到上海时区次日零点
      */
     private int incrementCounter(String key, int oldCount) {
         try {
@@ -339,7 +339,7 @@ public class PasswordChangeServiceImpl implements PasswordChangeService {
     }
 
     /**
-     * 计算当前时间到上海时区次日零点的秒数。
+     * 计算当前时间到上海时区次日零点的秒数
      */
     private long secondsUntilNextDay() {
         ZonedDateTime now = ZonedDateTime.now(BUSINESS_ZONE);
@@ -348,7 +348,7 @@ public class PasswordChangeServiceImpl implements PasswordChangeService {
     }
 
     /**
-     * 复制用户信息供通知使用，不复制后续写入的新密码。
+     * 复制用户信息供通知使用，不复制后续写入的新密码
      */
     private UserPo copyUser(UserPo source) {
         UserPo copy = new UserPo();
@@ -366,7 +366,7 @@ public class PasswordChangeServiceImpl implements PasswordChangeService {
     }
 
     /**
-     * 防止通知内容出现空 IP。
+     * 防止通知内容出现空 IP
      */
     private String normalizeIp(String clientIp) {
         return clientIp == null || clientIp.isBlank() ? "unknown" : clientIp;

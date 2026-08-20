@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 当前登录用户的密码安全接口。
+ * 当前登录用户的密码安全接口
  *
  * <p>控制器只负责提取已由拦截器验证的用户 ID 和客户端 IP，数据库访问全部下沉到业务层。</p>
  */
@@ -30,7 +30,7 @@ public class PasswordController {
     private PasswordChangeService passwordChangeService;
 
     /**
-     * 获取当前用户的图形验证码。
+     * 获取当前用户的图形验证码
      */
     @GetMapping("users/me/password/captcha")
     public ResponseEntity<CaptchaVO> captcha(HttpServletRequest request) {
@@ -39,19 +39,19 @@ public class PasswordController {
     }
 
     /**
-     * 修改当前登录用户密码。
+     * 修改当前登录用户密码
      */
     @PutMapping("users/me/password")
     public ResponseEntity<Void> changePassword(@RequestBody @Validated ChangePasswordDTO changePasswordDTO,
                                                 HttpServletRequest request) {
         Integer userId = currentUserId(request);
-        // 只使用 Servlet 容器提供的远端地址，不无条件信任可被客户端伪造的转发头。
+        // 只使用 Servlet 容器提供的远端地址，不无条件信任可被客户端伪造的转发头
         String clientIp = request.getRemoteAddr();
         passwordChangeService.changePassword(userId, changePasswordDTO, clientIp);
         return ResponseEntity.ok().build();
     }
 
-    /** 从拦截器写入的请求属性读取身份，缺失时按未登录处理。 */
+    /** 从拦截器写入的请求属性读取身份，缺失时按未登录处理 */
     private Integer currentUserId(HttpServletRequest request) {
         Object value = request.getAttribute(TokenInterceptor.CURRENT_USER_ID_ATTRIBUTE);
         if (value instanceof Integer userId && userId > 0) {

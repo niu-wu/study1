@@ -37,7 +37,7 @@ public class SsoServiceImpl implements SsoService {
     private LoginConfig loginConfig;
 
     /**
-     * BCrypt 编码器。使用可选注入是为了兼容旧的单元测试和迁移期无安全组件的环境。
+     * BCrypt 编码器。使用可选注入是为了兼容旧的单元测试和迁移期无安全组件的环境
      */
     @Autowired(required = false)
     private PasswordEncoder passwordEncoder;
@@ -78,14 +78,14 @@ public class SsoServiceImpl implements SsoService {
     }
 
     /**
-     * 新用户使用 BCrypt 校验，历史明文账号在迁移完成前仍可正常登录。
+     * 新用户使用 BCrypt 校验，历史明文账号在迁移完成前仍可正常登录
      */
     private boolean passwordMatches(String rawPassword, String storedPassword) {
         if (rawPassword == null || storedPassword == null) {
             return false;
         }
         if (looksLikeBcrypt(storedPassword)) {
-            // BCrypt 摘要不允许回退到明文比较，防止摘要泄露后被当作密码提交。
+            // BCrypt 摘要不允许回退到明文比较，防止摘要泄露后被当作密码提交
             if (passwordEncoder == null) {
                 return false;
             }

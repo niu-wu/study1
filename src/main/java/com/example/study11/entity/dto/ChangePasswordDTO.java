@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 /**
- * 修改密码请求参数。
+ * 修改密码请求参数
  *
  * <p>{@code confirmed} 是前端二次确认弹窗的最终结果，后端仍会再次校验，
  * 防止绕过页面直接调用接口。</p>

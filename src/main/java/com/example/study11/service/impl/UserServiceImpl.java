@@ -32,7 +32,7 @@ public class UserServiceImpl implements UserService {
     private UserDao userDao;
 
     /**
-     * 新建用户统一写入 BCrypt 摘要；迁移期没有编码器时保留兼容回退。
+     * 新建用户统一写入 BCrypt 摘要；迁移期没有编码器时保留兼容回退
      */
     @Autowired(required = false)
     private PasswordEncoder passwordEncoder;
@@ -54,7 +54,7 @@ public class UserServiceImpl implements UserService {
         }
         UserPo userPo = new UserPo();
         userPo.setUsername(userSaveDTO.getUsername());
-        // 密码不能明文写入数据库，统一交由 BCrypt 生成不可逆摘要。
+        // 密码不能明文写入数据库，统一交由 BCrypt 生成不可逆摘要
         userPo.setPassword(encodePassword(userSaveDTO.getPassword()));
         userPo.setCreatedAt(new Date());
         userPo.setUpdatetime(new Date());

@@ -15,7 +15,7 @@ import java.time.format.DateTimeFormatter;
 /**
  * 密码修改邮件通知实现。
  *
- * <p>邮件配置只从环境变量/application.yml 读取，不在代码中写入真实 SMTP 凭据。
+ * <p>邮件配置只从环境变量/application.yml 读取，不在代码中写入真实 SMTP 凭据
  * 未配置邮箱或邮件组件时记录告警并返回，避免阻塞已经成功的密码修改。</p>
  */
 @Slf4j

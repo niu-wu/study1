@@ -23,7 +23,7 @@ public interface UserDao {
     // 更新用户基本信息(username/status)
     int updateUserById(UserPo userPo);
 
-    /**
+    /*
      * 只更新密码和更新时间，避免修改密码流程覆盖用户其他资料
      */
     int updatePasswordById(UserPo userPo);
