@@ -1,0 +1,29 @@
+  **文件改动明细：**
+- .gitignore：忽略运行时简历目录 /data/recruitment-resumes/。
+- pom.xml：增加 Flyway Core/MySQL 依赖、版本属性及 Maven Flyway 插件配置。
+- src/main/resources/application.yml：增加 Flyway、Multipart 文件大小限制和 file.storage 配置。
+- src/main/resources/db/migration/V1__create_recruitment_info.sql：创建独立 recruitment_info 表；record_uuid 为主键，自动生成的 id 为唯一非主键编号。
+- src/main/resources/db/migration/V2__create_recruitment_status_history.sql：创建状态历史表，关联招聘记录与现有 user.id。
+- src/main/resources/mapper/RecruitmentInfoMapper.xml、RecruitmentStatusHistoryMapper.xml：实现招聘 CRUD、分页筛选、统计、状态更新及状态历史 SQL。
+- src/main/java/com/example/study11/controller/RecruitmentInfoController.java：增加招聘 CRUD、分页、统计、状态动作和状态历史接口。
+- src/main/java/com/example/study11/service/RecruitmentInfoService.java、RecruitmentStatusService.java：定义招聘管理与状态流转业务接口。
+- src/main/java/com/example/study11/service/impl/RecruitmentInfoServiceImpl.java：实现 UUID 创建、初始状态、筛选分页序号、统计、更新保护和带历史检查的删除。
+- src/main/java/com/example/study11/service/impl/RecruitmentStatusServiceImpl.java：实现固定状态机、认证用户操作人、事务内历史写入及历史查询。
+- src/main/java/com/example/study11/dao/RecruitmentInfoDao.java、RecruitmentStatusHistoryDao.java：新增对应数据访问接口。
+- src/main/java/com/example/study11/entity/dto/RecruitmentInfoCreateDTO.java、RecruitmentInfoUpdateDTO.java、RecruitmentInfoPageRequest.java、RecruitmentStatusTransitionDTO.java：新增请求校验模型。
+- src/main/java/com/example/study11/entity/enums/RecruitmentStatus.java、StatusTransitionAction.java：定义招聘状态及允许动作。
+- src/main/java/com/example/study11/entity/po/RecruitmentInfoPo.java、RecruitmentInfoStatisticsPo.java、RecruitmentStatusHistoryPo.java：新增持久化模型。
+- src/main/java/com/example/study11/entity/vo/RecruitmentInfoVO.java、RecruitmentInfoStatisticsVO.java、RecruitmentStatusHistoryVO.java、common/model/PageResult.java：新增接口响应和分页模型。
+- src/main/java/com/example/study11/config/FileStorageProperties.java、utils/FileUtils.java：实现 PDF/DOC/DOCX 白名单、10MB 校验、UUID 文件名及路径穿越防护。
+- src/test/java/com/example/study11/config/FileStorageConfigurationTest.java、FlywayConfigurationTest.java：覆盖配置契约。
+- src/test/java/com/example/study11/controller/RecruitmentInfoControllerTest.java：覆盖分页、统计、状态动作和状态历史接口。
+- src/test/java/com/example/study11/recruitment/schema/RecruitmentSchemaMigrationTest.java、RecruitmentStatusHistoryMigrationTest.java：覆盖迁移表结构与外键。
+- src/test/java/com/example/study11/service/impl/RecruitmentInfoPaginationServiceTest.java、RecruitmentInfoServiceImplTest.java、RecruitmentStatusServiceImplTest.java：覆盖招聘业务与状态机行为。
+- src/test/java/com/example/study11/utils/FileUtilsTest.java：覆盖文件扩展名、大小、路径及非法配置。
+- docs/recruitment-backend-api.md、docs/superpowers/plans/2026-08-23-study1-recruitment-backend.md、docs/superpowers/specs/2026-08-23-study2-to-study1-recruitment-design.md：记录接口、迁移设计和后续计划。
+- study11_backup_before_recruitment_20260823_213144.sql：数据库备份文件，包含 user 表数据。
+  **未完成项/注意事项：**
+- 简历上传下载、复试、录用通知、淘汰/人才库、入职等 Session 16–31 功能尚未实现。
+- 当前仅完成文件存储配置和校验工具，尚无文件写入、下载或上传接口。
+- Spring Flyway 默认关闭，需要受控执行迁移。
+- study11_backup_before_recruitment_20260823_213144.sql 包含用户数据，提交前应确认是否允许纳入版本库。
