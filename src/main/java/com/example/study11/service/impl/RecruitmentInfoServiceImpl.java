@@ -1,6 +1,7 @@
 package com.example.study11.service.impl;
 
 import com.example.study11.common.model.PageResult;
+import com.example.study11.dao.CandidateResumeDao;
 import com.example.study11.dao.RecruitmentInfoDao;
 import com.example.study11.dao.RecruitmentStatusHistoryDao;
 import com.example.study11.entity.dto.RecruitmentInfoCreateDTO;
@@ -29,10 +30,14 @@ public class RecruitmentInfoServiceImpl implements RecruitmentInfoService {
 
     private final RecruitmentStatusHistoryDao recruitmentStatusHistoryDao;
 
+    private final CandidateResumeDao candidateResumeDao;
+
     public RecruitmentInfoServiceImpl(RecruitmentInfoDao recruitmentInfoDao,
-                                      RecruitmentStatusHistoryDao recruitmentStatusHistoryDao) {
+                                      RecruitmentStatusHistoryDao recruitmentStatusHistoryDao,
+                                      CandidateResumeDao candidateResumeDao) {
         this.recruitmentInfoDao = recruitmentInfoDao;
         this.recruitmentStatusHistoryDao = recruitmentStatusHistoryDao;
+        this.candidateResumeDao = candidateResumeDao;
     }
 
     @Override
@@ -154,6 +159,9 @@ public class RecruitmentInfoServiceImpl implements RecruitmentInfoService {
         }
         if (recruitmentStatusHistoryDao.countByRecordUuid(recordUuid) > 0) {
             throw ApiException.conflict("招聘记录已有状态历史，不能删除");
+        }
+        if (candidateResumeDao.countByRecordUuid(recordUuid) > 0) {
+            throw ApiException.conflict("招聘记录已有简历附件，不能删除");
         }
         if (recruitmentInfoDao.deleteByRecordUuid(recordUuid) != 1) {
             throw ApiException.internalServerError("招聘信息删除失败");

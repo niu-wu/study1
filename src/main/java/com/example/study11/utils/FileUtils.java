@@ -19,6 +19,8 @@ import java.util.UUID;
 @Component
 public class FileUtils {
 
+    private static final int MAX_ORIGINAL_FILENAME_LENGTH = 255;
+
     private static final String INVALID_CONFIGURATION_MESSAGE = "文件存储配置无效";
     private static final String INVALID_FILENAME_MESSAGE = "文件名或扩展名不合法";
     private static final String INVALID_FILE_SIZE_MESSAGE = "文件大小不合法";
@@ -44,11 +46,38 @@ public class FileUtils {
      * @return UUID 格式的存储文件名
      */
     public String generateStoredFilename(String originalFilename) {
+        validateOriginalFilename(originalFilename);
         String extension = extractAllowedExtension(originalFilename);
-        if (extension == null) {
+        return UUID.randomUUID() + "." + extension;
+    }
+
+    /**
+     * 校验原始文件名，长度与数据库列保持一致。
+     *
+     * @param originalFilename 客户端提交的原始文件名
+     */
+    public void validateOriginalFilename(String originalFilename) {
+        if (originalFilename == null || originalFilename.length() > MAX_ORIGINAL_FILENAME_LENGTH
+                || extractAllowedExtension(originalFilename) == null) {
             throw ApiException.badRequest(INVALID_FILENAME_MESSAGE);
         }
-        return UUID.randomUUID() + "." + extension;
+    }
+
+    /**
+     * 按受控扩展名解析规范 MIME，完全忽略客户端声明的 MIME。
+     *
+     * @param originalFilename 客户端提交的原始文件名
+     * @return 规范 MIME
+     */
+    public String resolveCanonicalContentType(String originalFilename) {
+        validateOriginalFilename(originalFilename);
+        String extension = extractAllowedExtension(originalFilename);
+        return switch (extension) {
+            case "pdf" -> "application/pdf";
+            case "doc" -> "application/msword";
+            case "docx" -> "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+            default -> throw ApiException.badRequest(INVALID_FILENAME_MESSAGE);
+        };
     }
 
     /**

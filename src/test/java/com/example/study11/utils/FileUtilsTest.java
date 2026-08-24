@@ -71,6 +71,24 @@ class FileUtilsTest {
     }
 
     @Test
+    void rejectsOriginalFilenameLongerThanDatabaseColumn() {
+        String maximumLengthFilename = "a".repeat(251) + ".pdf";
+        String oversizedFilename = "a".repeat(252) + ".pdf";
+
+        assertDoesNotThrow(() -> fileUtils.validateOriginalFilename(maximumLengthFilename));
+        assertBadRequest(() -> fileUtils.validateOriginalFilename(oversizedFilename));
+    }
+
+    @Test
+    void resolvesCanonicalContentTypeFromAllowedExtension() {
+        assertEquals("application/pdf", fileUtils.resolveCanonicalContentType("resume.PDF"));
+        assertEquals("application/msword", fileUtils.resolveCanonicalContentType("resume.doc"));
+        assertEquals("application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                fileUtils.resolveCanonicalContentType("resume.docx"));
+        assertBadRequest(() -> fileUtils.resolveCanonicalContentType("resume.txt"));
+    }
+
+    @Test
     void resolvesOnlyGeneratedNamesBelowTheNormalizedStorageRoot() {
         String storedFilename = "550e8400-e29b-41d4-a716-446655440000.pdf";
 

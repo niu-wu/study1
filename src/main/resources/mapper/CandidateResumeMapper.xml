@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.study11.dao.CandidateResumeDao">
+
+    <resultMap id="CandidateResumeMap" type="com.example.study11.entity.po.CandidateResumePo">
+        <id property="id" column="id"/>
+        <result property="recordUuid" column="record_uuid"/>
+        <result property="originalFilename" column="original_filename"/>
+        <result property="storedFilename" column="stored_filename"/>
+        <result property="fileSize" column="file_size"/>
+        <result property="contentType" column="content_type"/>
+        <result property="uploaderUserId" column="uploader_user_id"/>
+        <result property="uploadedAt" column="uploaded_at"/>
+    </resultMap>
+
+    <sql id="BaseColumnList">
+        id, record_uuid, original_filename, stored_filename, file_size, content_type,
+        uploader_user_id, uploaded_at
+    </sql>
+
+    <insert id="insert" parameterType="com.example.study11.entity.po.CandidateResumePo"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO `candidate_resume`
+        (record_uuid, original_filename, stored_filename, file_size, content_type,
+         uploader_user_id)
+        VALUES
+        (#{recordUuid}, #{originalFilename}, #{storedFilename}, #{fileSize}, #{contentType},
+         #{uploaderUserId})
+    </insert>
+
+    <select id="selectById" resultMap="CandidateResumeMap">
+        SELECT <include refid="BaseColumnList"/>
+        FROM `candidate_resume`
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectByIdForUpdate" resultMap="CandidateResumeMap">
+        SELECT <include refid="BaseColumnList"/>
+        FROM `candidate_resume`
+        WHERE id = #{id}
+        FOR UPDATE
+    </select>
+
+    <select id="selectByRecordUuid" resultMap="CandidateResumeMap">
+        SELECT <include refid="BaseColumnList"/>
+        FROM `candidate_resume`
+        WHERE record_uuid = #{recordUuid}
+        ORDER BY id DESC
+    </select>
+
+    <select id="countByRecordUuid" resultType="long">
+        SELECT COUNT(1)
+        FROM `candidate_resume`
+        WHERE record_uuid = #{recordUuid}
+    </select>
+
+    <delete id="deleteById">
+        DELETE FROM `candidate_resume`
+        WHERE id = #{id}
+    </delete>
+</mapper>

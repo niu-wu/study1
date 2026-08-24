@@ -1,6 +1,7 @@
 package com.example.study11.service.impl;
 
 import com.example.study11.dao.RecruitmentInfoDao;
+import com.example.study11.dao.CandidateResumeDao;
 import com.example.study11.dao.RecruitmentStatusHistoryDao;
 import com.example.study11.entity.dto.RecruitmentInfoCreateDTO;
 import com.example.study11.entity.dto.RecruitmentInfoUpdateDTO;
@@ -36,6 +37,9 @@ class RecruitmentInfoServiceImplTest {
 
     @Mock
     private RecruitmentStatusHistoryDao recruitmentStatusHistoryDao;
+
+    @Mock
+    private CandidateResumeDao candidateResumeDao;
 
     @InjectMocks
     private RecruitmentInfoServiceImpl recruitmentInfoService;
@@ -116,14 +120,35 @@ class RecruitmentInfoServiceImplTest {
         existing.setRecordUuid(recordUuid);
         when(recruitmentInfoDao.selectByRecordUuidForUpdate(recordUuid)).thenReturn(existing);
         when(recruitmentStatusHistoryDao.countByRecordUuid(recordUuid)).thenReturn(0L);
+        when(candidateResumeDao.countByRecordUuid(recordUuid)).thenReturn(0L);
         when(recruitmentInfoDao.deleteByRecordUuid(recordUuid)).thenReturn(1);
 
         assertDoesNotThrow(() -> recruitmentInfoService.delete(recordUuid));
 
-        InOrder inOrder = inOrder(recruitmentInfoDao, recruitmentStatusHistoryDao);
+        InOrder inOrder = inOrder(recruitmentInfoDao, recruitmentStatusHistoryDao, candidateResumeDao);
         inOrder.verify(recruitmentInfoDao).selectByRecordUuidForUpdate(recordUuid);
         inOrder.verify(recruitmentStatusHistoryDao).countByRecordUuid(recordUuid);
+        inOrder.verify(candidateResumeDao).countByRecordUuid(recordUuid);
         inOrder.verify(recruitmentInfoDao).deleteByRecordUuid(recordUuid);
+    }
+
+    @Test
+    void deleteRejectsRecordWithResumeWithoutDeletingParent() {
+        RecruitmentInfoPo existing = new RecruitmentInfoPo();
+        existing.setRecordUuid("record-with-resume");
+        when(recruitmentInfoDao.selectByRecordUuidForUpdate("record-with-resume"))
+                .thenReturn(existing);
+        when(recruitmentStatusHistoryDao.countByRecordUuid("record-with-resume"))
+                .thenReturn(0L);
+        when(candidateResumeDao.countByRecordUuid("record-with-resume"))
+                .thenReturn(1L);
+
+        ApiException exception = assertThrows(ApiException.class,
+                () -> recruitmentInfoService.delete("record-with-resume"));
+
+        assertEquals(409, exception.getStatus().value());
+        assertEquals("招聘记录已有简历附件，不能删除", exception.getMessage());
+        verify(recruitmentInfoDao, never()).deleteByRecordUuid("record-with-resume");
     }
 
     @Test
@@ -173,6 +198,8 @@ class RecruitmentInfoServiceImplTest {
         when(recruitmentInfoDao.selectByRecordUuidForUpdate("record-not-deleted"))
                 .thenReturn(existing);
         when(recruitmentStatusHistoryDao.countByRecordUuid("record-not-deleted"))
+                .thenReturn(0L);
+        when(candidateResumeDao.countByRecordUuid("record-not-deleted"))
                 .thenReturn(0L);
         when(recruitmentInfoDao.deleteByRecordUuid("record-not-deleted")).thenReturn(0);
 
