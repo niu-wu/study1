@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.study11.dao.RecruitmentInfoDao">
+
+    <resultMap id="RecruitmentInfoMap" type="com.example.study11.entity.po.RecruitmentInfoPo">
+        <id property="recordUuid" column="record_uuid"/>
+        <result property="id" column="id"/>
+        <result property="applicantName" column="applicant_name"/>
+        <result property="gender" column="gender"/>
+        <result property="position" column="position"/>
+        <result property="phone" column="phone"/>
+        <result property="email" column="email"/>
+        <result property="applicationChannel" column="application_channel"/>
+        <result property="applicationMethod" column="application_method"/>
+        <result property="status" column="status"/>
+        <result property="initialContactPerson" column="initial_contact_person"/>
+        <result property="initialInterviewTime" column="initial_interview_time"/>
+        <result property="retestContactPerson" column="retest_contact_person"/>
+        <result property="retestInterviewTime" column="retest_interview_time"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <sql id="BaseColumnList">
+        record_uuid, id, applicant_name, gender, position, phone, email,
+        application_channel, application_method, status, initial_contact_person,
+        initial_interview_time, retest_contact_person, retest_interview_time,
+        created_at, updated_at
+    </sql>
+
+    <insert id="insert" parameterType="com.example.study11.entity.po.RecruitmentInfoPo"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO `recruitment_info`
+        (record_uuid, applicant_name, gender, position, phone, email,
+         application_channel, application_method, status, initial_contact_person,
+         initial_interview_time, retest_contact_person, retest_interview_time)
+        VALUES
+        (#{recordUuid}, #{applicantName}, #{gender}, #{position}, #{phone}, #{email},
+         #{applicationChannel}, #{applicationMethod}, #{status}, #{initialContactPerson},
+         #{initialInterviewTime}, #{retestContactPerson}, #{retestInterviewTime})
+    </insert>
+
+    <select id="selectByRecordUuid" resultMap="RecruitmentInfoMap">
+        SELECT <include refid="BaseColumnList"/>
+        FROM `recruitment_info`
+        WHERE record_uuid = #{recordUuid}
+    </select>
+
+    <select id="selectByRecordUuidForUpdate" resultMap="RecruitmentInfoMap">
+        SELECT <include refid="BaseColumnList"/>
+        FROM `recruitment_info`
+        WHERE record_uuid = #{recordUuid}
+        FOR UPDATE
+    </select>
+
+    <select id="selectById" resultMap="RecruitmentInfoMap">
+        SELECT <include refid="BaseColumnList"/>
+        FROM `recruitment_info`
+        WHERE id = #{id}
+    </select>
+
+    <select id="findList" resultMap="RecruitmentInfoMap">
+        SELECT <include refid="BaseColumnList"/>
+        FROM `recruitment_info`
+        <where>
+            <if test="applicantName != null and applicantName != ''">
+                AND applicant_name LIKE CONCAT('%', #{applicantName}, '%')
+            </if>
+            <if test="position != null and position != ''">
+                AND position = #{position}
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY id DESC
+    </select>
+
+    <sql id="PageCondition">
+        <where>
+            <if test="request.applicantName != null and request.applicantName != ''">
+                AND applicant_name LIKE CONCAT('%', #{request.applicantName}, '%')
+            </if>
+            <if test="request.phoneOrEmailKeyword != null and request.phoneOrEmailKeyword != ''">
+                AND (phone LIKE CONCAT('%', #{request.phoneOrEmailKeyword}, '%')
+                     OR email LIKE CONCAT('%', #{request.phoneOrEmailKeyword}, '%'))
+            </if>
+            <if test="request.position != null and request.position != ''">
+                AND position = #{request.position}
+            </if>
+            <if test="request.status != null and request.status != ''">
+                AND status = #{request.status}
+            </if>
+            <if test="request.initialContactPerson != null and request.initialContactPerson != ''">
+                AND initial_contact_person = #{request.initialContactPerson}
+            </if>
+            <if test="request.retestContactPerson != null and request.retestContactPerson != ''">
+                AND retest_contact_person = #{request.retestContactPerson}
+            </if>
+            <if test="request.applicationChannel != null and request.applicationChannel != ''">
+                AND application_channel = #{request.applicationChannel}
+            </if>
+            <if test="request.createdFrom != null">
+                AND created_at &gt;= #{request.createdFrom}
+            </if>
+            <if test="request.createdTo != null">
+                AND created_at &lt;= #{request.createdTo}
+            </if>
+        </where>
+    </sql>
+
+    <select id="countByCondition" resultType="long">
+        SELECT COUNT(1)
+        FROM `recruitment_info`
+        <include refid="PageCondition"/>
+    </select>
+
+    <select id="selectPage" resultMap="RecruitmentInfoMap">
+        SELECT <include refid="BaseColumnList"/>
+        FROM `recruitment_info`
+        <include refid="PageCondition"/>
+        ORDER BY id DESC, record_uuid ASC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="selectStatistics"
+            resultType="com.example.study11.entity.po.RecruitmentInfoStatisticsPo">
+        SELECT
+            COALESCE(SUM(CASE WHEN status = 'PENDING_INITIAL' THEN 1 ELSE 0 END), 0)
+                AS pending_initial,
+            COALESCE(SUM(CASE WHEN status = 'PENDING_RETEST' THEN 1 ELSE 0 END), 0)
+                AS pending_retest,
+            COALESCE(SUM(CASE WHEN status = 'PENDING_ONBOARDING' THEN 1 ELSE 0 END), 0)
+                AS pending_onboarding,
+            COALESCE(SUM(CASE WHEN status IN ('REJECTED', 'DECLINED') THEN 1 ELSE 0 END), 0)
+                AS not_passed
+        FROM `recruitment_info`
+    </select>
+
+    <update id="updateStatusIfCurrent">
+        UPDATE `recruitment_info`
+        SET status = #{toStatus}
+        WHERE record_uuid = #{recordUuid}
+          AND status = #{fromStatus}
+    </update>
+
+    <update id="updateByRecordUuid" parameterType="com.example.study11.entity.po.RecruitmentInfoPo">
+        UPDATE `recruitment_info`
+        SET applicant_name = #{applicantName},
+            gender = #{gender},
+            position = #{position},
+            phone = #{phone},
+            email = #{email},
+            application_channel = #{applicationChannel},
+            application_method = #{applicationMethod},
+            initial_contact_person = #{initialContactPerson},
+            initial_interview_time = #{initialInterviewTime},
+            retest_contact_person = #{retestContactPerson},
+            retest_interview_time = #{retestInterviewTime}
+        WHERE record_uuid = #{recordUuid}
+    </update>
+
+    <delete id="deleteByRecordUuid">
+        DELETE FROM `recruitment_info`
+        WHERE record_uuid = #{recordUuid}
+    </delete>
+</mapper>
