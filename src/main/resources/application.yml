@@ -2,6 +2,13 @@
 spring:
   application:
     name: study1-1
+
+  # 文件上传配置
+  servlet:
+    multipart:
+      max-file-size: ${FILE_STORAGE_MAX_FILE_SIZE:10MB}
+      max-request-size: ${FILE_STORAGE_MAX_REQUEST_SIZE:11MB}
+
   # 数据源配置(本地环境)
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -34,6 +41,24 @@ spring:
       mail.smtp.connectiontimeout: ${MAIL_SMTP_CONNECTION_TIMEOUT:5000}
       mail.smtp.timeout: ${MAIL_SMTP_TIMEOUT:5000}
       mail.smtp.writetimeout: ${MAIL_SMTP_WRITE_TIMEOUT:5000}
+
+  # 数据库版本迁移默认关闭，避免应用启动时意外修改 study11。
+  flyway:
+    enabled: false
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 0
+    validate-on-migrate: true
+
+# 简历文件存储配置
+file:
+  storage:
+    upload-dir: ${FILE_STORAGE_UPLOAD_DIR:./data/recruitment-resumes}
+    max-file-size: ${FILE_STORAGE_MAX_FILE_SIZE:10MB}
+    allowed-extensions:
+      - pdf
+      - doc
+      - docx
 
 # MyBatis 配置
 mybatis:
