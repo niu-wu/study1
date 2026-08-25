@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.study11.dao.OnboardingRecordDao">
+
+    <resultMap id="OnboardingRecordMap" type="com.example.study11.entity.po.OnboardingRecordPo">
+        <id property="id" column="id"/>
+        <result property="recordUuid" column="record_uuid"/>
+        <result property="userId" column="user_id"/>
+        <result property="onboardingDate" column="onboarding_date"/>
+        <result property="onboardingNote" column="onboarding_note"/>
+        <result property="processedByUserId" column="processed_by_user_id"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <sql id="BaseColumnList">
+        id, record_uuid, user_id, onboarding_date, onboarding_note,
+        processed_by_user_id, created_at, updated_at
+    </sql>
+
+    <insert id="insert" parameterType="com.example.study11.entity.po.OnboardingRecordPo"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO `onboarding_record`
+        (record_uuid, user_id, onboarding_date, onboarding_note, processed_by_user_id,
+         created_at, updated_at)
+        VALUES
+        (#{recordUuid}, #{userId}, #{onboardingDate}, #{onboardingNote}, #{processedByUserId},
+         #{createdAt}, #{updatedAt})
+    </insert>
+
+    <select id="selectByRecordUuid" resultMap="OnboardingRecordMap">
+        SELECT <include refid="BaseColumnList"/>
+        FROM `onboarding_record`
+        WHERE record_uuid = #{recordUuid}
+        LIMIT 1
+    </select>
+</mapper>
