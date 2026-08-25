@@ -257,6 +257,50 @@ class ResumeStorageServiceImplTest {
     }
 
     @Test
+    void findsMetadataByIdWithoutExposingStoredFilename() {
+        CandidateResumePo source = metadata(9L, "550e8400-e29b-41d4-a716-446655440000.pdf");
+        source.setOriginalFilename("resume.pdf");
+        source.setFileSize(3L);
+        source.setContentType("application/pdf");
+        source.setUploaderUserId(7);
+        when(candidateResumeDao.selectById(9L)).thenReturn(source);
+
+        CandidateResumeVO result = resumeStorageService.findById(9L);
+
+        assertEquals(9L, result.getId());
+        assertEquals("resume.pdf", result.getOriginalFilename());
+        assertEquals("application/pdf", result.getContentType());
+        verify(candidateResumeDao).selectById(9L);
+    }
+
+    @Test
+    void findsMetadataListOnlyWhenParentRecordExists() {
+        when(recruitmentInfoDao.selectByRecordUuid(RECORD_UUID)).thenReturn(existingRecruitment());
+        CandidateResumePo source = metadata(9L, "550e8400-e29b-41d4-a716-446655440000.pdf");
+        source.setOriginalFilename("resume.pdf");
+        when(candidateResumeDao.selectByRecordUuid(RECORD_UUID)).thenReturn(List.of(source));
+
+        List<CandidateResumeVO> result = resumeStorageService.findByRecordUuid(RECORD_UUID);
+
+        assertEquals(1, result.size());
+        assertEquals(9L, result.get(0).getId());
+        assertEquals("resume.pdf", result.get(0).getOriginalFilename());
+        verify(recruitmentInfoDao).selectByRecordUuid(RECORD_UUID);
+        verify(candidateResumeDao).selectByRecordUuid(RECORD_UUID);
+    }
+
+    @Test
+    void rejectsMetadataListForUnknownRecord() {
+        when(recruitmentInfoDao.selectByRecordUuid(RECORD_UUID)).thenReturn(null);
+
+        ApiException exception = assertThrows(ApiException.class,
+                () -> resumeStorageService.findByRecordUuid(RECORD_UUID));
+
+        assertEquals(404, exception.getStatus().value());
+        verify(candidateResumeDao, never()).selectByRecordUuid(RECORD_UUID);
+    }
+
+    @Test
     void loadReturnsNotFoundForMissingMetadataOrPhysicalFile() {
         when(candidateResumeDao.selectById(10L)).thenReturn(null);
         ApiException metadataMissing = assertThrows(ApiException.class,
@@ -269,6 +313,16 @@ class ResumeStorageServiceImplTest {
 
         assertEquals(404, metadataMissing.getStatus().value());
         assertEquals(404, physicalMissing.getStatus().value());
+    }
+
+    @Test
+    void loadReturnsNotFoundForCorruptedStoredFilename() {
+        when(candidateResumeDao.selectById(12L)).thenReturn(metadata(12L, "resume.exe"));
+
+        ApiException exception = assertThrows(ApiException.class,
+                () -> resumeStorageService.loadFile(12L));
+
+        assertEquals(404, exception.getStatus().value());
     }
 
     @Test

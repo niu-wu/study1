@@ -24,6 +24,8 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /** 候选人简历附件存储服务实现。 */
 @Service
@@ -46,6 +48,31 @@ public class ResumeStorageServiceImpl implements ResumeStorageService {
         this.candidateResumeDao = candidateResumeDao;
         this.recruitmentInfoDao = recruitmentInfoDao;
         this.fileUtils = fileUtils;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CandidateResumeVO findById(Long id) {
+        validateId(id);
+        CandidateResumePo metadata = candidateResumeDao.selectById(id);
+        if (metadata == null) {
+            throw ApiException.notFound(FILE_NOT_FOUND_MESSAGE);
+        }
+        return toVo(metadata);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CandidateResumeVO> findByRecordUuid(String recordUuid) {
+        if (recordUuid == null || recordUuid.isBlank()) {
+            throw ApiException.badRequest(INVALID_RECORD_UUID_MESSAGE);
+        }
+        if (recruitmentInfoDao.selectByRecordUuid(recordUuid) == null) {
+            throw ApiException.notFound("招聘信息不存在");
+        }
+        return candidateResumeDao.selectByRecordUuid(recordUuid).stream()
+                .map(ResumeStorageServiceImpl::toVo)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -121,7 +148,12 @@ public class ResumeStorageServiceImpl implements ResumeStorageService {
         if (metadata == null) {
             throw ApiException.notFound(FILE_NOT_FOUND_MESSAGE);
         }
-        Path path = fileUtils.resolveStoragePath(metadata.getStoredFilename());
+        Path path;
+        try {
+            path = fileUtils.resolveStoragePath(metadata.getStoredFilename());
+        } catch (ApiException exception) {
+            throw ApiException.notFound(FILE_NOT_FOUND_MESSAGE);
+        }
         if (!Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)) {
             throw ApiException.notFound(FILE_NOT_FOUND_MESSAGE);
         }

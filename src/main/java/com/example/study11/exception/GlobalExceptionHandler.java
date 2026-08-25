@@ -15,11 +15,16 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.validation.method.ParameterValidationResult;
+import org.springframework.context.MessageSourceResolvable;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -64,6 +69,39 @@ public class GlobalExceptionHandler {
         log.warn("参数验证异常: {} - {}", request.getRequestURI(), errorMessage);
 
         ErrorResponse errorResponse = ErrorResponse.of(HttpStatus.BAD_REQUEST, fieldErrors);
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    /**
+     * Controller 方法参数校验异常（例如 @Positive/@Pattern 标注的路径参数）。
+     *
+     * <p>Spring Framework 6.1+ 不再将这类异常包装成
+     * {@link MethodArgumentNotValidException}，必须单独映射为 400，否则会被兜底处理为 500。</p>
+     */
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ErrorResponse> handleHandlerMethodValidationException(
+            HandlerMethodValidationException e, HttpServletRequest request) {
+
+        Map<String, String> errors = new LinkedHashMap<>();
+        for (ParameterValidationResult result : e.getParameterValidationResults()) {
+            String parameterName = result.getMethodParameter().getParameterName();
+            if (parameterName == null || parameterName.isBlank()) {
+                parameterName = "parameter";
+            }
+            String message = result.getResolvableErrors().stream()
+                    .map(MessageSourceResolvable::getDefaultMessage)
+                    .filter(value -> value != null && !value.isBlank())
+                    .findFirst()
+                    .orElse("参数验证失败");
+            errors.putIfAbsent(parameterName, message);
+        }
+        if (errors.isEmpty()) {
+            errors.put("parameter", "参数验证失败");
+        }
+
+        String errorMessage = errors.values().iterator().next();
+        log.warn("方法参数校验异常: {} - {}", request.getRequestURI(), errorMessage);
+        ErrorResponse errorResponse = ErrorResponse.of(HttpStatus.BAD_REQUEST, errors);
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
@@ -154,6 +192,15 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleMultipartException(
             MultipartException e, HttpServletRequest request) {
         ErrorResponse errorResponse = ErrorResponse.of(HttpStatus.BAD_REQUEST, "文件上传请求无效");
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    /** Multipart 请求缺少必要文件字段。 */
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<ErrorResponse> handleMissingServletRequestPartException(
+            MissingServletRequestPartException e, HttpServletRequest request) {
+        ErrorResponse errorResponse = ErrorResponse.of(HttpStatus.BAD_REQUEST,
+                "缺少必要文件: " + e.getRequestPartName());
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 

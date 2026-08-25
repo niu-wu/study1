@@ -197,14 +197,22 @@ public class FileUtils {
     }
 
     private boolean isSimpleClientFilename(String filename) {
-        return filename != null
-                && !filename.isBlank()
-                && filename.equals(filename.strip())
-                && filename.charAt(0) != '.'
-                && filename.indexOf('/') < 0
-                && filename.indexOf('\\') < 0
-                && filename.indexOf(':') < 0
-                && filename.indexOf('\0') < 0;
+        if (filename == null
+                || filename.isBlank()
+                || !filename.equals(filename.strip())
+                || filename.charAt(0) == '.'
+                || filename.indexOf('/') >= 0
+                || filename.indexOf('\\') >= 0
+                || filename.indexOf(':') >= 0
+                || filename.indexOf('\0') >= 0) {
+            return false;
+        }
+        for (int index = 0; index < filename.length(); index++) {
+            if (Character.isISOControl(filename.charAt(index))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private boolean isExtensionToken(String extension) {

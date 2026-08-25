@@ -80,6 +80,12 @@ class FileUtilsTest {
     }
 
     @Test
+    void rejectsControlCharactersInOriginalFilename() {
+        assertBadRequest(() -> fileUtils.validateOriginalFilename("resume\r\nX-Injected: yes.pdf"));
+        assertBadRequest(() -> fileUtils.validateOriginalFilename("resume\u0007.pdf"));
+    }
+
+    @Test
     void resolvesCanonicalContentTypeFromAllowedExtension() {
         assertEquals("application/pdf", fileUtils.resolveCanonicalContentType("resume.PDF"));
         assertEquals("application/msword", fileUtils.resolveCanonicalContentType("resume.doc"));
