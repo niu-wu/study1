@@ -4,26 +4,56 @@
 - src/main/resources/application.yml：增加 Flyway、Multipart 文件大小限制和 file.storage 配置。
 - src/main/resources/db/migration/V1__create_recruitment_info.sql：创建独立 recruitment_info 表；record_uuid 为主键，自动生成的 id 为唯一非主键编号。
 - src/main/resources/db/migration/V2__create_recruitment_status_history.sql：创建状态历史表，关联招聘记录与现有 user.id。
+- src/main/resources/db/migration/V4__create_retest_tables.sql：创建复试申请与审核表，关联现有 user.id 和 recruitment_info.record_uuid。
+- src/main/resources/db/migration/V5__create_offer_notice.sql：创建录用通知草稿/模拟发送表，复用现有 user.id，不接入 SMTP。
+- src/main/resources/db/migration/V6__create_recruitment_rejection.sql：创建淘汰/放弃入职及人才库归档表，关联招聘记录、简历附件和现有 user.id。
+- src/main/resources/db/migration/V7__create_onboarding_record.sql：创建入职关联表，关联招聘记录与现有 user.id，不保存初始密码。
 - src/main/resources/mapper/RecruitmentInfoMapper.xml、RecruitmentStatusHistoryMapper.xml：实现招聘 CRUD、分页筛选、统计、状态更新及状态历史 SQL。
 - src/main/java/com/example/study11/controller/RecruitmentInfoController.java：增加招聘 CRUD、分页、统计、状态动作和状态历史接口。
 - src/main/java/com/example/study11/service/RecruitmentInfoService.java、RecruitmentStatusService.java：定义招聘管理与状态流转业务接口。
 - src/main/java/com/example/study11/service/impl/RecruitmentInfoServiceImpl.java：实现 UUID 创建、初始状态、筛选分页序号、统计、更新保护和带历史检查的删除。
 - src/main/java/com/example/study11/service/impl/RecruitmentStatusServiceImpl.java：实现固定状态机、认证用户操作人、事务内历史写入及历史查询。
+- src/main/java/com/example/study11/service/impl/RetestServiceImpl.java：实现复试申请、复试确认、外派字段校验和状态历史。
+- src/main/java/com/example/study11/service/impl/OfferNoticeServiceImpl.java：实现录用通知草稿、模拟发送、邮箱/状态校验和待入职状态流转。
+- src/main/java/com/example/study11/service/impl/RejectionServiceImpl.java：实现任意非终态淘汰、待入职放弃、人才库筛选和附件归属校验。
+- src/main/java/com/example/study11/service/impl/OnboardingServiceImpl.java：复用现有 user 服务创建账号，办理入职并通过状态服务写入 ONBOARDED 历史。
 - src/main/java/com/example/study11/dao/RecruitmentInfoDao.java、RecruitmentStatusHistoryDao.java：新增对应数据访问接口。
+- src/main/java/com/example/study11/dao/RetestApplicationDao.java、RetestReviewDao.java、OfferNoticeDao.java：新增复试与录用通知数据访问接口。
+- src/main/java/com/example/study11/dao/RecruitmentRejectionDao.java：新增淘汰与人才库数据访问接口。
+- src/main/java/com/example/study11/dao/OnboardingRecordDao.java：新增入职记录数据访问接口。
 - src/main/java/com/example/study11/entity/dto/RecruitmentInfoCreateDTO.java、RecruitmentInfoUpdateDTO.java、RecruitmentInfoPageRequest.java、RecruitmentStatusTransitionDTO.java：新增请求校验模型。
 - src/main/java/com/example/study11/entity/enums/RecruitmentStatus.java、StatusTransitionAction.java：定义招聘状态及允许动作。
+- src/main/java/com/example/study11/entity/enums/RecruitmentType.java、NoticeStatus.java：定义招聘类型和录用通知状态。
+- src/main/java/com/example/study11/entity/enums/RejectionStage.java、RejectionReason.java、TalentCategory.java：定义淘汰阶段、原因和人才库分类。
 - src/main/java/com/example/study11/entity/po/RecruitmentInfoPo.java、RecruitmentInfoStatisticsPo.java、RecruitmentStatusHistoryPo.java：新增持久化模型。
 - src/main/java/com/example/study11/entity/vo/RecruitmentInfoVO.java、RecruitmentInfoStatisticsVO.java、RecruitmentStatusHistoryVO.java、common/model/PageResult.java：新增接口响应和分页模型。
+- src/main/java/com/example/study11/entity/vo/RetestDetailsVO.java、OfferNoticeVO.java：新增复试和录用通知响应模型。
+- src/main/java/com/example/study11/entity/vo/RecruitmentRejectionVO.java：新增淘汰与人才库响应模型。
+- src/main/java/com/example/study11/entity/vo/OnboardingRecordVO.java：新增入职记录响应模型，初始密码仅在办理成功响应中返回。
 - src/main/java/com/example/study11/config/FileStorageProperties.java、utils/FileUtils.java：实现 PDF/DOC/DOCX 白名单、10MB 校验、UUID 文件名及路径穿越防护。
 - src/test/java/com/example/study11/config/FileStorageConfigurationTest.java、FlywayConfigurationTest.java：覆盖配置契约。
 - src/test/java/com/example/study11/controller/RecruitmentInfoControllerTest.java：覆盖分页、统计、状态动作和状态历史接口。
 - src/test/java/com/example/study11/recruitment/schema/RecruitmentSchemaMigrationTest.java、RecruitmentStatusHistoryMigrationTest.java：覆盖迁移表结构与外键。
 - src/test/java/com/example/study11/service/impl/RecruitmentInfoPaginationServiceTest.java、RecruitmentInfoServiceImplTest.java、RecruitmentStatusServiceImplTest.java：覆盖招聘业务与状态机行为。
+- src/test/java/com/example/study11/service/impl/RetestServiceImplTest.java、OfferNoticeServiceImplTest.java、controller/RetestControllerTest.java、controller/OfferNoticeControllerTest.java：覆盖复试与录用通知成功、状态、重复和参数失败场景。
+- src/test/java/com/example/study11/recruitment/schema/RetestSchemaMigrationTest.java、OfferNoticeSchemaMigrationTest.java：覆盖 V4/V5 字段、索引和外键契约。
+- src/test/java/com/example/study11/service/impl/RejectionServiceImplTest.java、controller/RejectionControllerTest.java、recruitment/schema/RejectionSchemaMigrationTest.java：覆盖淘汰、放弃、人才库筛选、重复处理和 V6 结构契约。
+- src/test/java/com/example/study11/service/impl/OnboardingServiceImplTest.java、src/test/java/com/example/study11/controller/OnboardingControllerTest.java：覆盖账号创建、一次性密码、冲突、重复办理、状态和鉴权来源。
+- src/test/java/com/example/study11/recruitment/schema/OnboardingSchemaMigrationTest.java：覆盖 V7 字段、唯一约束、外键和不含密码列的契约。
+- src/test/java/com/example/study11/recruitment/integration/Study11DatabaseIntegrationTest.java：受 `STUDY11_INTEGRATION_TESTS=true` 开关控制，直连 MySQL 验证表、主键、唯一索引、外键、状态默认值、user 列集合及招聘编号生成规则。
 - src/test/java/com/example/study11/utils/FileUtilsTest.java：覆盖文件扩展名、大小、路径及非法配置。
 - docs/recruitment-backend-api.md、docs/superpowers/plans/2026-08-23-study1-recruitment-backend.md、docs/superpowers/specs/2026-08-23-study2-to-study1-recruitment-design.md：记录接口、迁移设计和后续计划。
 - study11_backup_before_recruitment_20260823_213144.sql：数据库备份文件，包含 user 表数据。
+- study11_backup_before_v2_v3_20260824_141330.sql：V2/V3 前数据库备份文件，必须保留。
   **未完成项/注意事项：**
-- 简历上传下载、复试、录用通知、淘汰/人才库、入职等 Session 16–31 功能尚未实现。
-- 当前仅完成文件存储配置和校验工具，尚无文件写入、下载或上传接口。
+- Session 15-18 已完成文件存储配置、简历实体、文件存储服务和四个简历接口的后端实现；自动化测试已覆盖安全边界，真实 Apifox 验证待补录。
+- Session 19-23 的复试和录用通知后端代码、V4/V5 迁移、自动化测试及本地 HTTP 验证已完成；Apifox 验证待补录，当前页面因 CDN ChunkLoadError 无法加载。
+- Session 24-25 的淘汰、放弃入职和人才库后端代码、V6 迁移、自动化测试及本地 HTTP 验证已完成；Apifox 验证待补录，当前页面因 CDN ChunkLoadError 无法加载。
+- Session 26-27 入职后端已完成；V7 已执行到 study11，自动化测试和本地 HTTP 验证通过。办理入职响应只返回一次性初始密码，详情查询不返回密码；数据库中用户密码为 BCrypt 摘要，`onboarding_record` 无密码字段。重复办理和手机号冲突均返回 `409`。Apifox 已保存并验证 `OnboardingProcess`（`201`）、`OnboardingDetails`（`200`）和重复办理（`409`）。
+- Session 18-25 的 Apifox 逐接口验收仍待补录；本地 HTTP 结果不冒充 Apifox 结果。
+- Session 28 数据库集成测试已完成：默认 Maven 测试保持禁用，显式连接 study11 时 4 项测试全部通过；临时招聘行会在测试后删除。真实 SQL 复核及入职接口的 Apifox 验收已记录在 `docs/recruitment-backend-api.md`。
+- Session 29 参数校验已完成：新增 DTO、路径参数和文件参数边界校验，统一校验异常返回 `400`；`Session29ValidationTest` 6 项通过。对应参数错误请求仍需在 Apifox 执行，自动化结果不替代 Apifox 验收。
+- Session 30 端到端自动化已完成：`Session30EndToEndTest` 2 项 MockMvc 流程通过，覆盖“招聘 -> 申请复试 -> 确认 -> 录用通知 -> 入职创建 user”和“招聘 -> 淘汰 -> 人才库”，并断言状态历史、操作人和事务结果。两条流程的 Apifox 重放仍待执行。
+- 最新构建复核已完成：`./mvnw.cmd clean test` 共 187 项测试，失败 0、错误 0、跳过 4；`./mvnw.cmd package` 为 `BUILD SUCCESS`；`git diff --check` 通过（仅有 CRLF 转换提示）。Session 31 的启动回归和 Apifox 全量回归仍待执行。
 - Spring Flyway 默认关闭，需要受控执行迁移。
-- study11_backup_before_recruitment_20260823_213144.sql 包含用户数据，提交前应确认是否允许纳入版本库。
+- 两个 study11 备份 SQL 文件包含用户数据，必须保留但提交前应确认是否允许纳入版本库。
