@@ -1,7 +1,9 @@
 package com.example.study11.entity.dto;
 
+import com.example.study11.entity.enums.RecruitmentType;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -22,6 +24,7 @@ public class RecruitmentInfoCreateDTO {
     @Size(max = 100, message = "岗位长度不能超过100")
     private String position;
 
+    @Pattern(regexp = "^1[3-9]\\d{9}$", message = "手机号格式不正确")
     @Size(max = 20, message = "手机号长度不能超过20")
     private String phone;
 
@@ -34,6 +37,9 @@ public class RecruitmentInfoCreateDTO {
 
     @Size(max = 50, message = "应聘方式长度不能超过50")
     private String applicationMethod;
+
+    /** 未填写时由服务端按内部招聘处理。 */
+    private RecruitmentType recruitmentType;
 
     @Size(max = 50, message = "初试对接人长度不能超过50")
     private String initialContactPerson;

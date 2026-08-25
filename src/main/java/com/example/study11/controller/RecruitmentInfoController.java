@@ -11,7 +11,10 @@ import com.example.study11.entity.vo.RecruitmentStatusHistoryVO;
 import com.example.study11.filter.TokenInterceptor;
 import com.example.study11.service.RecruitmentInfoService;
 import com.example.study11.service.RecruitmentStatusService;
+import com.example.study11.utils.RecruitmentRequestValidator;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -80,27 +83,34 @@ public class RecruitmentInfoController {
 
     @GetMapping("/{recordUuid}")
     public ResponseEntity<RecruitmentInfoVO> findByRecordUuid(
-            @PathVariable String recordUuid) {
+            @PathVariable @Pattern(regexp = RecruitmentRequestValidator.UUID_REGEX,
+                    message = "招聘记录 UUID 格式不正确") String recordUuid) {
+        RecruitmentRequestValidator.validateRecordUuid(recordUuid);
         return ResponseEntity.ok(recruitmentInfoService.findByRecordUuid(recordUuid));
     }
 
     @GetMapping("/by-id/{id}")
-    public ResponseEntity<RecruitmentInfoVO> findById(@PathVariable Long id) {
+    public ResponseEntity<RecruitmentInfoVO> findById(@PathVariable @Positive(message = "招聘记录编号必须为正数") Long id) {
+        RecruitmentRequestValidator.validatePositiveId(id, "招聘记录编号必须为正数");
         return ResponseEntity.ok(recruitmentInfoService.findById(id));
     }
 
     @PutMapping("/{recordUuid}")
     public ResponseEntity<RecruitmentInfoVO> update(
-            @PathVariable String recordUuid,
+            @PathVariable @Pattern(regexp = RecruitmentRequestValidator.UUID_REGEX,
+                    message = "招聘记录 UUID 格式不正确") String recordUuid,
             @RequestBody @Valid RecruitmentInfoUpdateDTO request) {
+        RecruitmentRequestValidator.validateRecordUuid(recordUuid);
         return ResponseEntity.ok(recruitmentInfoService.update(recordUuid, request));
     }
 
     @PostMapping("/{recordUuid}/status")
     public ResponseEntity<RecruitmentInfoVO> transitionStatus(
-            @PathVariable String recordUuid,
+            @PathVariable @Pattern(regexp = RecruitmentRequestValidator.UUID_REGEX,
+                    message = "招聘记录 UUID 格式不正确") String recordUuid,
             @RequestBody @Valid RecruitmentStatusTransitionDTO request,
             HttpServletRequest httpServletRequest) {
+        RecruitmentRequestValidator.validateRecordUuid(recordUuid);
         Integer operatorUserId = (Integer) httpServletRequest.getAttribute(
                 TokenInterceptor.CURRENT_USER_ID_ATTRIBUTE);
         return ResponseEntity.ok(recruitmentStatusService.transition(recordUuid, request, operatorUserId));
@@ -108,12 +118,16 @@ public class RecruitmentInfoController {
 
     @GetMapping("/{recordUuid}/status-history")
     public ResponseEntity<List<RecruitmentStatusHistoryVO>> findStatusHistory(
-            @PathVariable String recordUuid) {
+            @PathVariable @Pattern(regexp = RecruitmentRequestValidator.UUID_REGEX,
+                    message = "招聘记录 UUID 格式不正确") String recordUuid) {
+        RecruitmentRequestValidator.validateRecordUuid(recordUuid);
         return ResponseEntity.ok(recruitmentStatusService.findHistory(recordUuid));
     }
 
     @DeleteMapping("/{recordUuid}")
-    public ResponseEntity<Void> delete(@PathVariable String recordUuid) {
+    public ResponseEntity<Void> delete(@PathVariable @Pattern(regexp = RecruitmentRequestValidator.UUID_REGEX,
+            message = "招聘记录 UUID 格式不正确") String recordUuid) {
+        RecruitmentRequestValidator.validateRecordUuid(recordUuid);
         recruitmentInfoService.delete(recordUuid);
         return ResponseEntity.noContent().build();
     }

@@ -1,5 +1,6 @@
 package com.example.study11.entity.vo;
 
+import com.example.study11.entity.enums.RecruitmentType;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -30,6 +31,8 @@ public class RecruitmentInfoVO {
     private String applicationMethod;
 
     private String status;
+
+    private RecruitmentType recruitmentType;
 
     private String initialContactPerson;
 

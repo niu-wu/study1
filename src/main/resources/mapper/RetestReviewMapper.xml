@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.study11.dao.RetestReviewDao">
+
+    <resultMap id="RetestReviewMap" type="com.example.study11.entity.po.RetestReviewPo">
+        <id property="id" column="id"/>
+        <result property="recordUuid" column="record_uuid"/>
+        <result property="retestCompany" column="retest_company"/>
+        <result property="retestContactPerson" column="retest_contact_person"/>
+        <result property="retestTime" column="retest_time"/>
+        <result property="reviewerUserId" column="reviewer_user_id"/>
+        <result property="reviewTime" column="review_time"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <sql id="BaseColumnList">
+        id, record_uuid, retest_company, retest_contact_person, retest_time,
+        reviewer_user_id, review_time, created_at
+    </sql>
+
+    <insert id="insert" parameterType="com.example.study11.entity.po.RetestReviewPo"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO `retest_review`
+        (record_uuid, retest_company, retest_contact_person, retest_time,
+         reviewer_user_id, review_time)
+        VALUES
+        (#{recordUuid}, #{retestCompany}, #{retestContactPerson}, #{retestTime},
+         #{reviewerUserId}, #{reviewTime})
+    </insert>
+
+    <select id="selectByRecordUuid" resultMap="RetestReviewMap">
+        SELECT <include refid="BaseColumnList"/>
+        FROM `retest_review`
+        WHERE record_uuid = #{recordUuid}
+        ORDER BY id ASC
+        LIMIT 1
+    </select>
+</mapper>

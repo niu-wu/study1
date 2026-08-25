@@ -32,6 +32,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ExtendWith(MockitoExtension.class)
 class RecruitmentInfoControllerTest {
 
+    private static final String RECORD_UUID = "550e8400-e29b-41d4-a716-446655440000";
+
     @Mock
     private RecruitmentInfoService recruitmentInfoService;
 
@@ -93,12 +95,12 @@ class RecruitmentInfoControllerTest {
     @Test
     void statusTransitionUsesAuthenticatedRequestUserAndIgnoresClientOperator() throws Exception {
         RecruitmentInfoVO response = new RecruitmentInfoVO();
-        response.setRecordUuid("record-1");
+        response.setRecordUuid(RECORD_UUID);
         response.setStatus("RETEST_REVIEW");
-        when(recruitmentStatusService.transition(eq("record-1"), any(RecruitmentStatusTransitionDTO.class), eq(15)))
+        when(recruitmentStatusService.transition(eq(RECORD_UUID), any(RecruitmentStatusTransitionDTO.class), eq(15)))
                 .thenReturn(response);
 
-        mockMvc.perform(post("/api/recruitment-info/record-1/status")
+        mockMvc.perform(post("/api/recruitment-info/" + RECORD_UUID + "/status")
                         .requestAttr(TokenInterceptor.CURRENT_USER_ID_ATTRIBUTE, 15)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(new Object() {
@@ -108,19 +110,19 @@ class RecruitmentInfoControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("RETEST_REVIEW"));
 
-        verify(recruitmentStatusService).transition(eq("record-1"), any(RecruitmentStatusTransitionDTO.class), eq(15));
+        verify(recruitmentStatusService).transition(eq(RECORD_UUID), any(RecruitmentStatusTransitionDTO.class), eq(15));
     }
 
     @Test
     void statusHistoryReturnsHistoryForRecord() throws Exception {
         RecruitmentStatusHistoryVO history = new RecruitmentStatusHistoryVO();
-        history.setRecordUuid("record-1");
+        history.setRecordUuid(RECORD_UUID);
         history.setFromStatus("PENDING_INITIAL");
         history.setToStatus("RETEST_REVIEW");
         history.setOperatorUserId(15);
-        when(recruitmentStatusService.findHistory("record-1")).thenReturn(List.of(history));
+        when(recruitmentStatusService.findHistory(RECORD_UUID)).thenReturn(List.of(history));
 
-        mockMvc.perform(get("/api/recruitment-info/record-1/status-history"))
+        mockMvc.perform(get("/api/recruitment-info/" + RECORD_UUID + "/status-history"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].fromStatus").value("PENDING_INITIAL"))
                 .andExpect(jsonPath("$[0].operatorUserId").value(15));

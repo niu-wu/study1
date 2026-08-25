@@ -14,6 +14,7 @@
         <result property="applicationChannel" column="application_channel"/>
         <result property="applicationMethod" column="application_method"/>
         <result property="status" column="status"/>
+        <result property="recruitmentType" column="recruitment_type"/>
         <result property="initialContactPerson" column="initial_contact_person"/>
         <result property="initialInterviewTime" column="initial_interview_time"/>
         <result property="retestContactPerson" column="retest_contact_person"/>
@@ -24,7 +25,7 @@
 
     <sql id="BaseColumnList">
         record_uuid, id, applicant_name, gender, position, phone, email,
-        application_channel, application_method, status, initial_contact_person,
+        application_channel, application_method, status, recruitment_type, initial_contact_person,
         initial_interview_time, retest_contact_person, retest_interview_time,
         created_at, updated_at
     </sql>
@@ -33,11 +34,11 @@
             useGeneratedKeys="true" keyProperty="id" keyColumn="id">
         INSERT INTO `recruitment_info`
         (record_uuid, applicant_name, gender, position, phone, email,
-         application_channel, application_method, status, initial_contact_person,
+         application_channel, application_method, status, recruitment_type, initial_contact_person,
          initial_interview_time, retest_contact_person, retest_interview_time)
         VALUES
         (#{recordUuid}, #{applicantName}, #{gender}, #{position}, #{phone}, #{email},
-         #{applicationChannel}, #{applicationMethod}, #{status}, #{initialContactPerson},
+         #{applicationChannel}, #{applicationMethod}, #{status}, #{recruitmentType}, #{initialContactPerson},
          #{initialInterviewTime}, #{retestContactPerson}, #{retestInterviewTime})
     </insert>
 
@@ -154,6 +155,7 @@
             email = #{email},
             application_channel = #{applicationChannel},
             application_method = #{applicationMethod},
+            recruitment_type = #{recruitmentType},
             initial_contact_person = #{initialContactPerson},
             initial_interview_time = #{initialInterviewTime},
             retest_contact_person = #{retestContactPerson},

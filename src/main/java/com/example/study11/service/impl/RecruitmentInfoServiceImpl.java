@@ -7,6 +7,7 @@ import com.example.study11.dao.RecruitmentStatusHistoryDao;
 import com.example.study11.entity.dto.RecruitmentInfoCreateDTO;
 import com.example.study11.entity.dto.RecruitmentInfoPageRequest;
 import com.example.study11.entity.dto.RecruitmentInfoUpdateDTO;
+import com.example.study11.entity.enums.RecruitmentType;
 import com.example.study11.entity.po.RecruitmentInfoPo;
 import com.example.study11.entity.po.RecruitmentInfoStatisticsPo;
 import com.example.study11.entity.vo.RecruitmentInfoStatisticsVO;
@@ -47,6 +48,8 @@ public class RecruitmentInfoServiceImpl implements RecruitmentInfoService {
         RecruitmentInfoPo recruitmentInfoPo = toPo(request);
         recruitmentInfoPo.setRecordUuid(UUID.randomUUID().toString());
         recruitmentInfoPo.setStatus(DEFAULT_STATUS);
+        recruitmentInfoPo.setRecruitmentType(request.getRecruitmentType() == null
+                ? RecruitmentType.INTERNAL : request.getRecruitmentType());
         if (recruitmentInfoDao.insert(recruitmentInfoPo) != 1) {
             throw ApiException.internalServerError("招聘信息创建失败");
         }
@@ -141,6 +144,8 @@ public class RecruitmentInfoServiceImpl implements RecruitmentInfoService {
         replacement.setRecordUuid(recordUuid);
         replacement.setId(current.getId());
         replacement.setStatus(current.getStatus());
+        replacement.setRecruitmentType(current.getRecruitmentType() == null
+                ? RecruitmentType.INTERNAL : current.getRecruitmentType());
         replacement.setCreatedAt(current.getCreatedAt());
         if (recruitmentInfoDao.updateByRecordUuid(replacement) != 1) {
             throw ApiException.internalServerError("招聘信息更新失败");
@@ -230,6 +235,7 @@ public class RecruitmentInfoServiceImpl implements RecruitmentInfoService {
         result.setApplicationChannel(source.getApplicationChannel());
         result.setApplicationMethod(source.getApplicationMethod());
         result.setStatus(source.getStatus());
+        result.setRecruitmentType(source.getRecruitmentType());
         result.setInitialContactPerson(source.getInitialContactPerson());
         result.setInitialInterviewTime(source.getInitialInterviewTime());
         result.setRetestContactPerson(source.getRetestContactPerson());

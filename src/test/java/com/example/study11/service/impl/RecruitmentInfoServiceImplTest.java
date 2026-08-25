@@ -5,6 +5,7 @@ import com.example.study11.dao.CandidateResumeDao;
 import com.example.study11.dao.RecruitmentStatusHistoryDao;
 import com.example.study11.entity.dto.RecruitmentInfoCreateDTO;
 import com.example.study11.entity.dto.RecruitmentInfoUpdateDTO;
+import com.example.study11.entity.enums.RecruitmentType;
 import com.example.study11.entity.po.RecruitmentInfoPo;
 import com.example.study11.entity.vo.RecruitmentInfoVO;
 import com.example.study11.exception.ApiException;
@@ -75,6 +76,37 @@ class RecruitmentInfoServiceImplTest {
         assertEquals("PENDING_INITIAL", inserted.getStatus());
         assertEquals(11L, result.getId());
         assertEquals(inserted.getRecordUuid(), result.getRecordUuid());
+    }
+
+    @Test
+    void createPreservesExplicitOutsourcedRecruitmentType() {
+        RecruitmentInfoCreateDTO request = new RecruitmentInfoCreateDTO();
+        request.setApplicantName("李四");
+        request.setPosition("外派测试工程师");
+        request.setRecruitmentType(RecruitmentType.OUTSOURCED);
+
+        when(recruitmentInfoDao.insert(any(RecruitmentInfoPo.class))).thenAnswer(invocation -> {
+            RecruitmentInfoPo inserted = invocation.getArgument(0);
+            inserted.setId(12L);
+            return 1;
+        });
+        when(recruitmentInfoDao.selectByRecordUuid(any(String.class)))
+                .thenAnswer(invocation -> {
+                    RecruitmentInfoPo saved = new RecruitmentInfoPo();
+                    saved.setRecordUuid(invocation.getArgument(0));
+                    saved.setId(12L);
+                    saved.setApplicantName("李四");
+                    saved.setPosition("外派测试工程师");
+                    saved.setStatus("PENDING_INITIAL");
+                    saved.setRecruitmentType(RecruitmentType.OUTSOURCED);
+                    return saved;
+                });
+
+        recruitmentInfoService.create(request);
+
+        ArgumentCaptor<RecruitmentInfoPo> captor = ArgumentCaptor.forClass(RecruitmentInfoPo.class);
+        verify(recruitmentInfoDao).insert(captor.capture());
+        assertEquals(RecruitmentType.OUTSOURCED, captor.getValue().getRecruitmentType());
     }
 
     @Test
