@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.study11.dao.OfferNoticeDao">
+
+    <resultMap id="OfferNoticeMap" type="com.example.study11.entity.po.OfferNoticePo">
+        <id property="id" column="id"/>
+        <result property="recordUuid" column="record_uuid"/>
+        <result property="recipientEmail" column="recipient_email"/>
+        <result property="noticeContent" column="notice_content"/>
+        <result property="status" column="status"/>
+        <result property="draftedByUserId" column="drafted_by_user_id"/>
+        <result property="draftedAt" column="drafted_at"/>
+        <result property="sentByUserId" column="sent_by_user_id"/>
+        <result property="sentAt" column="sent_at"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <sql id="BaseColumnList">
+        id, record_uuid, recipient_email, notice_content, status, drafted_by_user_id,
+        drafted_at, sent_by_user_id, sent_at, created_at, updated_at
+    </sql>
+
+    <insert id="insert" parameterType="com.example.study11.entity.po.OfferNoticePo"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO `offer_notice`
+        (record_uuid, recipient_email, notice_content, status, drafted_by_user_id, drafted_at)
+        VALUES
+        (#{recordUuid}, #{recipientEmail}, #{noticeContent}, #{status}, #{draftedByUserId}, #{draftedAt})
+    </insert>
+
+    <select id="selectByRecordUuid" resultMap="OfferNoticeMap">
+        SELECT <include refid="BaseColumnList"/>
+        FROM `offer_notice`
+        WHERE record_uuid = #{recordUuid}
+    </select>
+
+    <select id="selectByRecordUuidForUpdate" resultMap="OfferNoticeMap">
+        SELECT <include refid="BaseColumnList"/>
+        FROM `offer_notice`
+        WHERE record_uuid = #{recordUuid}
+        FOR UPDATE
+    </select>
+
+    <update id="updateToSent">
+        UPDATE `offer_notice`
+        SET status = 'SENT',
+            sent_by_user_id = #{sentByUserId},
+            sent_at = #{sentAt}
+        WHERE record_uuid = #{recordUuid}
+          AND status = 'DRAFT'
+    </update>
+</mapper>
