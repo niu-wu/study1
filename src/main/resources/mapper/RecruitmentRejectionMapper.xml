@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.study11.dao.RecruitmentRejectionDao">
+
+    <resultMap id="RecruitmentRejectionMap" type="com.example.study11.entity.po.RecruitmentRejectionPo">
+        <id property="id" column="id"/>
+        <result property="recordUuid" column="record_uuid"/>
+        <result property="action" column="action"/>
+        <result property="rejectionStage" column="rejection_stage"/>
+        <result property="rejectionReason" column="rejection_reason"/>
+        <result property="remark" column="remark"/>
+        <result property="resumeAttachmentId" column="resume_attachment_id"/>
+        <result property="talentCategory" column="talent_category"/>
+        <result property="operatorUserId" column="operator_user_id"/>
+        <result property="rejectionTime" column="rejection_time"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <sql id="BaseColumnList">
+        id, record_uuid, action, rejection_stage, rejection_reason, remark,
+        resume_attachment_id, talent_category, operator_user_id, rejection_time, created_at
+    </sql>
+
+    <insert id="insert" parameterType="com.example.study11.entity.po.RecruitmentRejectionPo"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO `recruitment_rejection`
+        (record_uuid, action, rejection_stage, rejection_reason, remark,
+         resume_attachment_id, talent_category, operator_user_id, rejection_time, created_at)
+        VALUES
+        (#{recordUuid}, #{action}, #{rejectionStage}, #{rejectionReason}, #{remark},
+         #{resumeAttachmentId}, #{talentCategory}, #{operatorUserId}, #{rejectionTime}, #{createdAt})
+    </insert>
+
+    <select id="selectByRecordUuid" resultMap="RecruitmentRejectionMap">
+        SELECT <include refid="BaseColumnList"/>
+        FROM `recruitment_rejection`
+        WHERE record_uuid = #{recordUuid}
+        LIMIT 1
+    </select>
+
+    <select id="selectTalentPool" resultMap="RecruitmentRejectionMap">
+        SELECT <include refid="BaseColumnList"/>
+        FROM `recruitment_rejection`
+        <where>
+            <if test="talentCategory != null and talentCategory != ''">
+                AND talent_category = #{talentCategory}
+            </if>
+            <if test="rejectionReason != null and rejectionReason != ''">
+                AND rejection_reason = #{rejectionReason}
+            </if>
+            <if test="rejectionStage != null and rejectionStage != ''">
+                AND rejection_stage = #{rejectionStage}
+            </if>
+        </where>
+        ORDER BY rejection_time DESC, id DESC
+    </select>
+</mapper>
