@@ -33,3 +33,7 @@ build/
 .vscode/
 
 /data/recruitment-resumes/
+
+# Local database backups may contain user data; keep them out of version control.
+study11_backup_before_recruitment_20260823_213144.sql
+study11_backup_before_v2_v3_20260824_141330.sql

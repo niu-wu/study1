@@ -45,15 +45,16 @@
 - docs/recruitment-backend-api.md、docs/superpowers/plans/2026-08-23-study1-recruitment-backend.md、docs/superpowers/specs/2026-08-23-study2-to-study1-recruitment-design.md：记录接口、迁移设计和后续计划。
 - study11_backup_before_recruitment_20260823_213144.sql：数据库备份文件，包含 user 表数据。
 - study11_backup_before_v2_v3_20260824_141330.sql：V2/V3 前数据库备份文件，必须保留。
-  **未完成项/注意事项：**
-- Session 15-18 已完成文件存储配置、简历实体、文件存储服务和四个简历接口的后端实现；自动化测试已覆盖安全边界，真实 Apifox 验证待补录。
-- Session 19-23 的复试和录用通知后端代码、V4/V5 迁移、自动化测试及本地 HTTP 验证已完成；Apifox 验证待补录，当前页面因 CDN ChunkLoadError 无法加载。
-- Session 24-25 的淘汰、放弃入职和人才库后端代码、V6 迁移、自动化测试及本地 HTTP 验证已完成；Apifox 验证待补录，当前页面因 CDN ChunkLoadError 无法加载。
+  **完成情况/注意事项：**
+- 本节状态按用户于 2026-08-26 确认的 Apifox 实测结果更新；不在本次记录中保存 Token、密码或其他敏感值。
+- Session 15-18 已完成文件存储配置、简历实体、文件存储服务和四个简历接口的后端实现；自动化测试及 Apifox 成功/失败验证均已完成。
+- Session 19-23 的复试和录用通知后端代码、V4/V5 迁移、自动化测试、本地 HTTP 验证及 Apifox 成功/失败验证均已完成。
+- Session 24-25 的淘汰、放弃入职和人才库后端代码、V6 迁移、自动化测试、本地 HTTP 验证及 Apifox 成功/失败验证均已完成。
 - Session 26-27 入职后端已完成；V7 已执行到 study11，自动化测试和本地 HTTP 验证通过。办理入职响应只返回一次性初始密码，详情查询不返回密码；数据库中用户密码为 BCrypt 摘要，`onboarding_record` 无密码字段。重复办理和手机号冲突均返回 `409`。Apifox 已保存并验证 `OnboardingProcess`（`201`）、`OnboardingDetails`（`200`）和重复办理（`409`）。
-- Session 18-25 的 Apifox 逐接口验收仍待补录；本地 HTTP 结果不冒充 Apifox 结果。
+- Session 18-25 的 Apifox 逐接口验收已完成，覆盖简历、复试、录用通知、淘汰和人才库接口的成功、鉴权失败、参数错误、重复操作及状态限制场景。
 - Session 28 数据库集成测试已完成：默认 Maven 测试保持禁用，显式连接 study11 时 4 项测试全部通过；临时招聘行会在测试后删除。真实 SQL 复核及入职接口的 Apifox 验收已记录在 `docs/recruitment-backend-api.md`。
-- Session 29 参数校验已完成：新增 DTO、路径参数和文件参数边界校验，统一校验异常返回 `400`；`Session29ValidationTest` 6 项通过。对应参数错误请求仍需在 Apifox 执行，自动化结果不替代 Apifox 验收。
-- Session 30 端到端自动化已完成：`Session30EndToEndTest` 2 项 MockMvc 流程通过，覆盖“招聘 -> 申请复试 -> 确认 -> 录用通知 -> 入职创建 user”和“招聘 -> 淘汰 -> 人才库”，并断言状态历史、操作人和事务结果。两条流程的 Apifox 重放仍待执行。
-- 最新构建复核已完成：`./mvnw.cmd clean test` 共 187 项测试，失败 0、错误 0、跳过 4；`./mvnw.cmd package` 为 `BUILD SUCCESS`；`git diff --check` 通过（仅有 CRLF 转换提示）。Session 31 的启动回归和 Apifox 全量回归仍待执行。
+- Session 29 参数校验已完成：新增 DTO、路径参数和文件参数边界校验，统一校验异常返回 `400`；`Session29ValidationTest` 6 项通过。Apifox 已完成非法手机号、畸形 UUID、非法附件编号、空文件、空白 `recordUuid` 及缺少 `x-token` 等错误请求验证。
+- Session 30 端到端自动化已完成：`Session30EndToEndTest` 2 项 MockMvc 流程通过，覆盖“招聘 -> 申请复试 -> 确认 -> 录用通知 -> 入职创建 user”和“招聘 -> 淘汰 -> 人才库”，并断言状态历史、操作人和事务结果。两条流程已在 Apifox 按相同顺序完成重放，并核对环境变量与状态历史。
+- 最新构建复核已完成：`./mvnw.cmd clean test` 共 187 项测试，失败 0、错误 0、跳过 4；`./mvnw.cmd package` 为 `BUILD SUCCESS`；`git diff --check` 通过（仅有 CRLF 转换提示）。Session 31 的启动回归、注册/登录/用户/鉴权检查及 Apifox 全量接口回归均已完成。
 - Spring Flyway 默认关闭，需要受控执行迁移。
 - 两个 study11 备份 SQL 文件包含用户数据，必须保留但提交前应确认是否允许纳入版本库。

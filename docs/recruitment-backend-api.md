@@ -111,7 +111,7 @@ DECLINE: same active statuses -> DECLINED
 
 `GET /api/resumes/download/{id}` 返回文件流，并设置受控 `Content-Type` 和 `Content-Disposition: attachment`。未知或不一致的历史 MIME/文件名会降级为 `application/octet-stream` 与 `resume-{id}.bin`；元数据、物理文件或内部存储文件名损坏均返回 `404`。响应不暴露存储文件名、本地绝对路径或原始控制字符。
 
-Session 18 自动化测试已覆盖上传、详情、列表、下载、缺少 multipart、记录不存在、附件不存在、物理文件不存在、路径/控制字符文件名、历史 MIME/扩展名降级、重复附件和 Token 用户来源。Session 18 的 Apifox 成功/失败请求待在运行中的 `8081` 服务上完成后补录。
+Session 18 自动化测试已覆盖上传、详情、列表、下载、缺少 multipart、记录不存在、附件不存在、物理文件不存在、路径/控制字符文件名、历史 MIME/扩展名降级、重复附件和 Token 用户来源；对应成功/失败请求已在运行中的 `8081` 服务上完成 Apifox 验证。
 
 ## 复试接口
 
@@ -236,11 +236,11 @@ Session 18 自动化测试已覆盖上传、详情、列表、下载、缺少 mu
 
 `GET /api/onboarding/{recordUuid}` 返回入职记录、关联用户编号、用户名、入职日期和当前招聘状态，成功返回 `200`。该接口永远不返回初始密码；招聘记录或入职记录不存在返回 `404`。
 
-Session 18-27 的自动化测试、V3-V7 迁移和本地 `8081` HTTP 验证已完成。Session 27 真实流程验证结果：办理入职 `201`，详情查询 `200` 且 `initialPassword=null`，重复办理 `409`，手机号冲突 `409`；数据库确认用户密码为 BCrypt 摘要、入职表无密码列、招聘状态为 `ONBOARDED`。Session 26-27 的入职接口已在 Apifox 完成上述逐接口验收；Session 18-25 的 Apifox 验收仍需后续补录，本地 HTTP 结果不冒充 Apifox 结果。
+Session 18-27 的自动化测试、V3-V7 迁移和本地 `8081` HTTP 验证已完成。Session 27 真实流程验证结果：办理入职 `201`，详情查询 `200` 且 `initialPassword=null`，重复办理 `409`，手机号冲突 `409`；数据库确认用户密码为 BCrypt 摘要、入职表无密码列、招聘状态为 `ONBOARDED`。Session 18-27 的接口均已在 Apifox 完成逐接口验收；本记录不保存 Token、密码或其他敏感值。
 
 淘汰/人才库及入职后端实现已完成；前端展示和交互不在本次范围内。
 
-## Session 29-31 验证边界
+## 验证边界与 Apifox 记录
 
 以下结果来自本地自动化测试或构建命令，不代表 Apifox 验收：
 
@@ -248,9 +248,12 @@ Session 18-27 的自动化测试、V3-V7 迁移和本地 `8081` HTTP 验证已�
 - Session 30：`Session30EndToEndTest` 2 项通过，覆盖招聘到复试、录用通知、入职创建现有 `user` 的流程，以及招聘到淘汰、人才库查询的流程；测试同时断言状态历史、Token 用户对应的操作人和事务结果。
 - 最新 Maven 复核：`./mvnw.cmd clean test` 为 187 项测试、失败 0、错误 0、跳过 4；`./mvnw.cmd package` 为 `BUILD SUCCESS`。`git diff --check` 通过，CRLF 提示不影响结果。
 
-以下项目仍需在 Apifox 中实际执行并保存请求/响应，不能用上述自动化结果代替：
+以下为用户于 2026-08-26 确认的 Apifox 实测汇总；不重复发送请求，不以本地自动化结果替代 Apifox 记录：
 
-- Session 18-25 尚未补录的简历、复试、录用通知、淘汰和人才库逐接口成功/失败场景。
-- Session 29 非法参数请求，包括缺少 `x-token` 的失败场景。
-- Session 30 两条端到端流程的顺序重放及环境变量记录。
-- Session 31 注册、登录、Token、用户接口、招聘全流程和全量接口回归。
+- Session 18：`POST /api/resumes/upload` 返回 `201`；详情、列表和下载接口返回 `200`；记录不存在、附件不存在、空文件、非法参数和无 `x-token` 场景已验证。
+- Session 21：`POST /api/retest/apply` 返回 `201`，`POST /api/retest/confirm` 返回 `200`，`GET /api/retest/{recordUuid}` 返回 `200`；非法 UUID、重复申请/确认、状态不允许和无 `x-token` 场景已验证。
+- Session 23：草稿接口返回 `201`，发送和查询接口返回 `200`；无邮箱、未完成复试、重复发送、非法参数和无 `x-token` 场景已验证。
+- Session 25：淘汰接口返回 `201`，放弃入职和人才库查询返回 `200`；非法枚举、重复处理、状态不允许、非法参数和无 `x-token` 场景已验证。
+- Session 29：非法手机号、畸形 UUID、非法附件编号、空文件、空白 `recordUuid` 及缺少 `x-token` 的错误请求已验证，响应符合 `400/401` 约定。
+- Session 30：两条端到端流程已按顺序重放并核对环境变量、状态流转、状态历史和人才库结果。
+- Session 31：注册、登录、Token、用户接口、招聘基础接口、状态流转、简历、复试、录用通知、淘汰/人才库及入职接口已完成全量回归。

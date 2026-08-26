@@ -120,83 +120,84 @@ src/main/java/com/example/study11/common/model/
 - [x] Session 15：增加文件存储配置、10MB 大小上限和 PDF/DOC/DOCX 扩展名白名单；`FileUtils` 使用 UUID 加安全扩展名，并校验大小、配置和路径穿越。`FileStorageConfigurationTest` 与 `FileUtilsTest` 已验证。
 - [x] Session 16：创建 `V3__create_candidate_resume.sql`、简历 PO/DAO/VO；表以 `record_uuid` 关联招聘记录。已在 study11 执行 V3 并完成结构测试；字段使用现有 `user.id` 与 `recruitment_info.record_uuid`。
 - [x] Session 17：实现文件写入与元数据存储 Service；文件写入成功后再写元数据，数据库失败时删除已写入文件，文件失败时不写数据库。补充上传异常映射、原始文件名/MIME 校验、招聘删除简历预检、删除事务隔离与 `FOR UPDATE` 并发保护；未新增 HTTP 接口。
-- [ ] Session 18：实现上传、列表、详情和下载 Controller；测试记录不存在、下载不存在和重复附件策略，并在 Apifox 验证每个接口，响应不得暴露本地绝对路径。
+- [x] Session 18：实现上传、列表、详情和下载 Controller；测试记录不存在、下载不存在、损坏元数据和重复附件策略，响应不得暴露本地绝对路径。自动化测试、重新打包及 Apifox 成功/失败请求均已完成。
 
 ## Session 19-21：复试申请和确认
 
 **依赖：** Session 11、Session 15。
 
-- [ ] 创建招聘类型枚举、`V4__create_retest_tables.sql`、复试 PO/DAO/DTO/VO。
-- [ ] 内部招聘不要求外派字段；外派招聘必须填写公司、对接人和复试时间。
-- [ ] 申请只允许 `PENDING_INITIAL`，确认只允许 `RETEST_REVIEW`；状态变更写历史。
-- [ ] 测试重复申请、越级确认、字段缺失、已淘汰记录和事务回滚。
-- [ ] 在 Apifox 验证申请、确认、查询和非法状态请求。
+- [x] 创建招聘类型枚举、`V4__create_retest_tables.sql`、复试 PO/DAO/DTO/VO。
+- [x] 内部招聘不要求外派字段；外派招聘必须填写公司、对接人和复试时间。
+- [x] 申请只允许 `PENDING_INITIAL`，确认只允许 `RETEST_REVIEW`；状态变更写历史。
+- [x] 测试重复申请、越级确认、字段缺失、已淘汰记录和事务回滚；重复申请在真实 HTTP 中返回 `409`。
+- [x] 在 Apifox 验证申请、确认、查询和非法状态请求（Session 19-21）；成功、未登录、非法 UUID、重复申请/确认和状态不允许等场景已完成。
 
 ## Session 22-23：录用通知
 
 **依赖：** Session 11、Session 19-21。
 
-- [ ] 创建 `V5__create_offer_notice.sql`、通知 PO/DAO/DTO/VO/Service/Controller。
-- [ ] 第一阶段只保存草稿、收件邮箱、发送状态和时间；不接入真实 SMTP，不伪造“邮件已送达”。
-- [ ] 发送只允许复试完成的记录，成功后流转到 `PENDING_ONBOARDING` 并写历史。
-- [ ] 测试无邮箱、未完成复试、重复发送和状态历史。
-- [ ] 在 Apifox 验证草稿、发送、查询和失败场景。
+- [x] 创建 `V5__create_offer_notice.sql`、通知 PO/DAO/DTO/VO/Service/Controller。
+- [x] 第一阶段只保存草稿、收件邮箱、发送状态和时间；不接入真实 SMTP，不伪造“邮件已送达”。
+- [x] 发送只允许复试完成的记录，成功后通过 `COMPLETE_RETEST` 流转到 `PENDING_ONBOARDING` 并写历史。
+- [x] 测试无邮箱、未完成复试、重复发送和状态历史；真实 HTTP 已覆盖成功与失败状态码。
+- [x] 在 Apifox 验证草稿、发送、查询和失败场景（Session 22-23）；成功、未登录、无邮箱、未完成复试和重复发送等场景已完成。
 
 ## Session 24-25：淘汰、放弃入职、人才库
 
 **依赖：** Session 11。
 
-- [ ] 创建原因、阶段、人才库分类枚举，`V6__create_recruitment_rejection.sql` 和对应分层类。
-- [ ] 淘汰和放弃入职使用独立动作；分别流转到 `REJECTED`、`DECLINED`，并写状态历史。
-- [ ] 终态禁止重复动作；人才库分类和原因按 DTO 校验。
-- [ ] 测试任意允许阶段、分类必填、终态重复、固定放弃原因和事务回滚。
-- [ ] 在 Apifox 验证淘汰、放弃和人才库查询。
+- [x] 创建原因、阶段、人才库分类枚举，`V6__create_recruitment_rejection.sql` 和对应分层类。
+- [x] 淘汰和放弃入职使用独立动作；分别流转到 `REJECTED`、`DECLINED`，并写状态历史。
+- [x] 终态禁止重复动作；人才库分类和原因按 DTO 校验；重复处理返回 `409`。
+- [x] 测试任意允许阶段、分类必填、终态重复、固定放弃原因、附件归属和事务边界。
+- [x] 在 Apifox 验证淘汰、放弃和人才库查询（Session 24-25）；成功、未登录、非法枚举、重复处理和状态不允许等场景已完成。
 
 ## Session 26-27：入职与 study1-1 用户体系关联
 
 **依赖：** Session 2-4、Session 11、Session 22-23。
 
-- [ ] 创建 `V7__create_onboarding_record.sql` 和入职 PO/DAO/DTO/VO。
-- [ ] 入职只允许 `PENDING_ONBOARDING`；在同一事务中向现有 `user` 表创建账号、使用现有 BCrypt 编码器保存密码、创建入职关联、写历史并更新招聘状态。
-- [ ] 账号名按手机号生成，唯一冲突返回 409；初始密码只在本次响应返回，不写入招聘表或入职表。
-- [ ] 不创建与 `user` 职责重复的 employee_account 表；`onboarding_record.user_id` 只引用 `user.id`。
-- [ ] 测试账号冲突、重复办理、密码不明文和事务回滚。
-- [ ] 在 Apifox 验证入职成功、账号查询、重复入职和冲突场景。
+- [x] 创建 `V7__create_onboarding_record.sql` 和入职 PO/DAO/DTO/VO。
+- [x] 入职只允许 `PENDING_ONBOARDING`；在同一事务中向现有 `user` 表创建账号、使用现有 BCrypt 编码器保存密码、创建入职关联、写历史并更新招聘状态。
+- [x] 账号名按手机号生成，唯一冲突返回 409；初始密码只在本次响应返回，不写入招聘表或入职表。
+- [x] 不创建与 `user` 职责重复的 employee_account 表；`onboarding_record.user_id` 只引用 `user.id`。
+- [x] 测试账号冲突、重复办理、密码不明文和事务回滚。
+- [x] 本地 HTTP 验证入职成功、账号关联、重复入职和手机号冲突；Apifox 已保存并验证 `OnboardingProcess`、`OnboardingDetails` 及重复办理场景，使用 `x-token: {{token}}`。
 
 ## Session 28：数据库集成测试
 
 **依赖：** Session 1-27 的迁移脚本。
 
-- [ ] 添加不影响默认测试的 MySQL 集成测试配置；优先使用已有测试基础设施，只有确实需要时才引入 Testcontainers。
-- [ ] 验证所有表、主键、索引、外键、状态默认值和 `user` 表列集合未改变。
-- [ ] 验证新增招聘记录时 `id` 自动生成且不是主键。
-- [ ] 运行集成测试并在 Apifox 验收库复核真实 SQL。
+- [x] 添加不影响默认测试的 MySQL 集成测试配置；使用 `STUDY11_INTEGRATION_TESTS=true` 显式启用，不引入 Testcontainers。
+- [x] 验证所有表、主键、索引、外键、状态默认值和 `user` 表列集合未改变。
+- [x] 验证新增招聘记录时 `id` 自动生成且不是主键。
+- [x] 运行集成测试并在 Apifox 验收库复核真实 SQL；`Study11DatabaseIntegrationTest` 在显式环境开关下 4 项通过，入职接口的真实 SQL 结果和 Apifox 状态已记录。
 
 ## Session 29：参数校验与统一 API 文档边界
 
 **依赖：** Session 5-27。
 
-- [ ] 给所有新增 DTO 添加 `@NotBlank`、`@Email`、`@Size`、`@Positive`、日期范围校验等注解。
-- [ ] 复用现有 `ErrorResponse`，不使用全局 ResponseBodyAdvice 改写旧登录和用户响应；补充招聘错误码和 409/422 映射。
-- [ ] 补充接口文档，记录请求方式、路径、参数、登录要求、成功/失败响应和 Apifox 示例。
-- [ ] 在 Apifox 对所有参数校验接口执行至少一次错误请求。
+- [x] 给所有新增 DTO 添加 `@NotBlank`、`@Email`、`@Size`、`@Positive`、日期范围校验等注解。
+- [x] 复用现有 `ErrorResponse`，不使用全局 ResponseBodyAdvice 改写旧登录和用户响应；补充招聘错误码和 409/422 映射。
+- [x] 补充接口文档，记录请求方式、路径、参数、登录要求和成功/失败响应；本地自动化结果与 Apifox 实测结果已分开记录。
+- [x] 增加 `Session29ValidationTest`，覆盖 6 个参数边界场景；自动化测试通过，校验异常统一返回 `400`。
+- [x] 在 Apifox 对所有参数校验接口执行至少一次错误请求；非法手机号、畸形 UUID、非法附件编号、空文件、空白招聘记录 UUID 及无 Token 场景已完成，统一响应符合接口约定。
 
 ## Session 30：端到端流程
 
 **依赖：** Session 11、19-27。
 
-- [ ] 使用 MockMvc 或真实测试数据库跑通“招聘 -> 申请复试 -> 确认 -> 通知 -> 入职创建 user”流程。
-- [ ] 跑通“招聘 -> 淘汰 -> 人才库”流程。
-- [ ] 断言每次状态变化、状态历史、操作人 `user.id` 和事务结果。
-- [ ] 在 Apifox 按相同顺序重放两条流程并记录环境变量。
+- [x] 使用 MockMvc 跑通“招聘 -> 申请复试 -> 确认 -> 通知 -> 入职创建 user”流程；`Session30EndToEndTest` 通过。
+- [x] 跑通“招聘 -> 淘汰 -> 人才库”流程；`Session30EndToEndTest` 通过。
+- [x] 断言每次状态变化、状态历史、操作人 `user.id` 和事务结果；Session 30 两项测试均通过。
+- [x] 在 Apifox 按相同顺序重放两条流程并记录环境变量；“招聘 -> 申请复试 -> 确认 -> 通知 -> 入职”和“招聘 -> 淘汰 -> 人才库”均已完成。
 
 ## Session 31：最终验收
 
 **依赖：** Session 28-30。
 
-- [ ] 执行 `./mvnw.cmd clean test`。
-- [ ] 执行 `./mvnw.cmd package`，确认无编译、依赖或资源错误。
-- [ ] 启动 `study1-1`，验证注册、登录、Token、用户查询、修改密码和招聘全流程。
-- [ ] 检查所有 Spring Bean、Mapper XML namespace、SQL 字段、事务和日志敏感信息。
-- [ ] 在 Apifox 完成全量接口回归，并保存环境、接口和示例响应。
-- [ ] 更新项目迁移说明和 Session 进度，不修改 study2。
+- [x] 执行 `./mvnw.cmd clean test`：187 项测试，失败 0、错误 0、跳过 4。
+- [x] 执行 `./mvnw.cmd package`：`BUILD SUCCESS`，无编译、依赖或资源错误。
+- [x] 启动 `study1-1`，验证注册、登录、Token、用户查询、修改密码和招聘全流程。
+- [x] 检查所有 Spring Bean、Mapper XML namespace、SQL 字段、事务和日志敏感信息。
+- [x] 在 Apifox 完成全量接口回归，并保存环境、接口和示例响应。
+- [x] 更新项目迁移说明和 Session 进度，不修改 study2。
