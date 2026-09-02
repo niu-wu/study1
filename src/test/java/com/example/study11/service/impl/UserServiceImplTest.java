@@ -2,6 +2,7 @@ package com.example.study11.service.impl;
 
 import com.example.study11.dao.UserDao;
 import com.example.study11.entity.dto.UserSaveDTO;
+import com.example.study11.entity.enums.UserRole;
 import com.example.study11.entity.po.UserPo;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,5 +42,6 @@ class UserServiceImplTest {
         ArgumentCaptor<UserPo> captor = ArgumentCaptor.forClass(UserPo.class);
         verify(userDao).insert(captor.capture());
         assertEquals("$2a$encoded", captor.getValue().getPassword());
+        assertEquals(UserRole.USER, captor.getValue().getRole());
     }
 }

@@ -4,7 +4,7 @@
 <mapper namespace="com.example.study11.dao.UserDao">
 
     <select id="findList" resultType="com.example.study11.entity.po.UserPo">
-        SELECT id, username, password, created_at, updatetime, email, phone, birthday,
+        SELECT id, username, password, role, created_at, updatetime, email, phone, birthday,
                status, is_deleted
         FROM `user`
         WHERE is_deleted = 0
@@ -13,14 +13,14 @@
 
     <insert id="insert" parameterType="com.example.study11.entity.po.UserPo"
             useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-        INSERT INTO `user` (username, password, created_at, updatetime, email, phone, birthday,
+        INSERT INTO `user` (username, password, role, created_at, updatetime, email, phone, birthday,
                             status, is_deleted)
-        VALUES (#{username}, #{password}, #{createdAt}, #{updatetime}, #{email}, #{phone},
+        VALUES (#{username}, #{password}, #{role}, #{createdAt}, #{updatetime}, #{email}, #{phone},
                 #{birthday}, #{status}, #{isDeleted})
     </insert>
 
     <select id="selectByUserName" resultType="com.example.study11.entity.po.UserPo">
-        SELECT id, username, password, created_at, updatetime, email, phone, birthday,
+        SELECT id, username, password, role, created_at, updatetime, email, phone, birthday,
                status, is_deleted
         FROM `user`
         WHERE username = #{username}
@@ -28,7 +28,7 @@
     </select>
 
     <select id="selectUserById" resultType="com.example.study11.entity.po.UserPo">
-        SELECT id, username, password, created_at, updatetime, email, phone, birthday,
+        SELECT id, username, password, role, created_at, updatetime, email, phone, birthday,
                status, is_deleted
         FROM `user`
         WHERE id = #{id}

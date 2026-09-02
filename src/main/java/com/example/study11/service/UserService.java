@@ -1,6 +1,7 @@
 package com.example.study11.service;
 
 import com.example.study11.entity.dto.UserSaveDTO;
+import com.example.study11.entity.dto.CurrentUserUpdateDTO;
 import com.example.study11.entity.dto.UserUpdateDTO;
 import com.example.study11.entity.po.UserPo;
 import com.example.study11.entity.vo.UserVO;
@@ -26,6 +27,9 @@ public interface UserService {
 
     // 更新用户基本信息
     void updateUserById(UserUpdateDTO userUpdateDTO);
+
+    /** 更新当前登录用户资料，角色和账号状态由后端保留。 */
+    UserVO updateCurrentUser(Integer userId, CurrentUserUpdateDTO request);
 
     // 逻辑删除用户
     void deleteUserById(Integer id);

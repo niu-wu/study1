@@ -51,17 +51,25 @@ class Study11DatabaseIntegrationTest {
             "retest_review",
             "offer_notice",
             "recruitment_rejection",
-            "onboarding_record");
+            "onboarding_record",
+            "recruitment_company",
+            "recruitment_job",
+            "recruitment_job_company",
+            "recruitment_job_status_history");
 
-    private static final Map<String, Set<String>> EXPECTED_PRIMARY_KEYS = Map.of(
-            "recruitment_info", Set.of("record_uuid"),
-            "recruitment_status_history", Set.of("id"),
-            "candidate_resume", Set.of("id"),
-            "retest_application", Set.of("id"),
-            "retest_review", Set.of("id"),
-            "offer_notice", Set.of("id"),
-            "recruitment_rejection", Set.of("id"),
-            "onboarding_record", Set.of("id"));
+    private static final Map<String, Set<String>> EXPECTED_PRIMARY_KEYS = Map.ofEntries(
+            Map.entry("recruitment_info", Set.of("record_uuid")),
+            Map.entry("recruitment_status_history", Set.of("id")),
+            Map.entry("candidate_resume", Set.of("id")),
+            Map.entry("retest_application", Set.of("id")),
+            Map.entry("retest_review", Set.of("id")),
+            Map.entry("offer_notice", Set.of("id")),
+            Map.entry("recruitment_rejection", Set.of("id")),
+            Map.entry("onboarding_record", Set.of("id")),
+            Map.entry("recruitment_company", Set.of("company_uuid")),
+            Map.entry("recruitment_job", Set.of("job_uuid")),
+            Map.entry("recruitment_job_company", Set.of("allocation_uuid")),
+            Map.entry("recruitment_job_status_history", Set.of("id")));
 
     private static final Set<ForeignKey> EXPECTED_FOREIGN_KEYS = Set.of(
             new ForeignKey("recruitment_status_history", "record_uuid", "recruitment_info", "record_uuid"),
@@ -80,7 +88,19 @@ class Study11DatabaseIntegrationTest {
             new ForeignKey("recruitment_rejection", "operator_user_id", "user", "id"),
             new ForeignKey("onboarding_record", "record_uuid", "recruitment_info", "record_uuid"),
             new ForeignKey("onboarding_record", "user_id", "user", "id"),
-            new ForeignKey("onboarding_record", "processed_by_user_id", "user", "id"));
+            new ForeignKey("onboarding_record", "processed_by_user_id", "user", "id"),
+            new ForeignKey("recruitment_company", "created_by_user_id", "user", "id"),
+            new ForeignKey("recruitment_job", "created_by_user_id", "user", "id"),
+            new ForeignKey("recruitment_job", "updated_by_user_id", "user", "id"),
+            new ForeignKey("recruitment_job_company", "job_uuid", "recruitment_job", "job_uuid"),
+            new ForeignKey("recruitment_job_company", "company_uuid", "recruitment_company", "company_uuid"),
+            new ForeignKey("recruitment_job_company", "created_by_user_id", "user", "id"),
+            new ForeignKey("recruitment_job_company", "updated_by_user_id", "user", "id"),
+            new ForeignKey("recruitment_job_status_history", "job_uuid", "recruitment_job", "job_uuid"),
+            new ForeignKey("recruitment_job_status_history", "allocation_uuid", "recruitment_job_company", "allocation_uuid"),
+            new ForeignKey("recruitment_job_status_history", "operator_user_id", "user", "id"),
+            new ForeignKey("recruitment_info", "job_uuid", "recruitment_job", "job_uuid"),
+            new ForeignKey("recruitment_info", "job_company_allocation_uuid", "recruitment_job_company", "allocation_uuid"));
 
     private Connection connection;
 
@@ -105,7 +125,7 @@ class Study11DatabaseIntegrationTest {
                 "study11 is missing one or more required tables");
 
         Set<String> expectedUserColumns = Set.of(
-                "id", "username", "password", "created_at", "status",
+                "id", "username", "password", "role", "created_at", "status",
                 "is_deleted", "updatetime", "email", "phone", "birthday");
         Set<String> actualUserColumns = queryStringSet(
                 "SELECT column_name FROM information_schema.columns "
@@ -146,6 +166,7 @@ class Study11DatabaseIntegrationTest {
         assertEquals("PENDING_INITIAL", columnDefault("recruitment_info", "status"));
         assertEquals("INTERNAL", columnDefault("recruitment_info", "recruitment_type"));
         assertEquals("DRAFT", columnDefault("offer_notice", "status"));
+        assertEquals("USER", columnDefault("user", "role"));
 
         for (String table : EXPECTED_PRIMARY_KEYS.keySet()) {
             assertTrue(columnExtra(table, "id").contains("auto_increment"),

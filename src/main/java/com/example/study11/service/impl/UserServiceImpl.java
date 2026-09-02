@@ -3,6 +3,8 @@ package com.example.study11.service.impl;
 import com.example.study11.dao.UserDao;
 import com.example.study11.entity.dto.UserSaveDTO;
 import com.example.study11.entity.dto.UserUpdateDTO;
+import com.example.study11.entity.dto.CurrentUserUpdateDTO;
+import com.example.study11.entity.enums.UserRole;
 import com.example.study11.entity.po.UserPo;
 import com.example.study11.entity.vo.UserVO;
 import com.example.study11.exception.ApiException;
@@ -56,6 +58,8 @@ public class UserServiceImpl implements UserService {
         userPo.setUsername(userSaveDTO.getUsername());
         // 密码不能明文写入数据库，统一交由 BCrypt 生成不可逆摘要
         userPo.setPassword(encodePassword(userSaveDTO.getPassword()));
+        // 客户端 DTO 不暴露角色字段，所有新账号统一由后端赋予 USER。
+        userPo.setRole(UserRole.USER);
         userPo.setCreatedAt(new Date());
         userPo.setUpdatetime(new Date());
         userPo.setEmail(userSaveDTO.getEmail());
@@ -106,6 +110,25 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public UserVO updateCurrentUser(Integer userId, CurrentUserUpdateDTO request) {
+        UserPo current = getExistingUser(userId);
+        UserPo sameName = userDao.selectByUserName(request.getUsername());
+        if (sameName != null && !sameName.getId().equals(userId)) {
+            throw new ApiException(HttpStatus.CONFLICT, "用户名已存在");
+        }
+        UserPo update = new UserPo();
+        update.setId(userId);
+        update.setUsername(request.getUsername());
+        update.setStatus(current.getStatus());
+        update.setUpdatetime(new Date());
+        update.setEmail(request.getEmail());
+        update.setPhone(request.getPhone());
+        update.setBirthday(parseDate(request.getBirthday()));
+        userDao.updateUserById(update);
+        return getUserDetailsById(userId);
+    }
+
+    @Override
     public void deleteUserById(Integer id) {
         UserPo userPo = getExistingUser(id);
         // 重复删除保护
@@ -135,6 +158,7 @@ public class UserServiceImpl implements UserService {
         UserVO vo = new UserVO();
         vo.setId(userPo.getId());
         vo.setUsername(userPo.getUsername());
+        vo.setRole(userPo.getRole());
         vo.setCreatedAt(userPo.getCreatedAt());
         vo.setUpdatetime(userPo.getUpdatetime());
         vo.setEmail(userPo.getEmail());

@@ -24,6 +24,10 @@ public class RecruitmentInfoPo {
 
     private String position;
 
+    private String jobUuid;
+
+    private String jobCompanyAllocationUuid;
+
     private String phone;
 
     private String email;

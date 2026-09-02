@@ -24,6 +24,11 @@ public class RecruitmentInfoCreateDTO {
     @Size(max = 100, message = "岗位长度不能超过100")
     private String position;
 
+    /** 岗位关联，历史数据允许为空；新建岗位记录时由后端校验关联一致性。 */
+    private String jobUuid;
+
+    private String jobCompanyAllocationUuid;
+
     @Pattern(regexp = "^1[3-9]\\d{9}$", message = "手机号格式不正确")
     @Size(max = 20, message = "手机号长度不能超过20")
     private String phone;

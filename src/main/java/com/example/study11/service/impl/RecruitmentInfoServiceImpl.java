@@ -196,6 +196,8 @@ public class RecruitmentInfoServiceImpl implements RecruitmentInfoService {
         result.setApplicantName(request.getApplicantName());
         result.setGender(request.getGender());
         result.setPosition(request.getPosition());
+        result.setJobUuid(request.getJobUuid());
+        result.setJobCompanyAllocationUuid(request.getJobCompanyAllocationUuid());
         result.setPhone(request.getPhone());
         result.setEmail(request.getEmail());
         result.setApplicationChannel(request.getApplicationChannel());
@@ -212,6 +214,8 @@ public class RecruitmentInfoServiceImpl implements RecruitmentInfoService {
         result.setApplicantName(request.getApplicantName());
         result.setGender(request.getGender());
         result.setPosition(request.getPosition());
+        result.setJobUuid(request.getJobUuid());
+        result.setJobCompanyAllocationUuid(request.getJobCompanyAllocationUuid());
         result.setPhone(request.getPhone());
         result.setEmail(request.getEmail());
         result.setApplicationChannel(request.getApplicationChannel());
@@ -230,6 +234,8 @@ public class RecruitmentInfoServiceImpl implements RecruitmentInfoService {
         result.setApplicantName(source.getApplicantName());
         result.setGender(source.getGender());
         result.setPosition(source.getPosition());
+        result.setJobUuid(source.getJobUuid());
+        result.setJobCompanyAllocationUuid(source.getJobCompanyAllocationUuid());
         result.setPhone(source.getPhone());
         result.setEmail(source.getEmail());
         result.setApplicationChannel(source.getApplicationChannel());

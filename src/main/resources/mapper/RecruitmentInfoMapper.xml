@@ -9,6 +9,8 @@
         <result property="applicantName" column="applicant_name"/>
         <result property="gender" column="gender"/>
         <result property="position" column="position"/>
+        <result property="jobUuid" column="job_uuid"/>
+        <result property="jobCompanyAllocationUuid" column="job_company_allocation_uuid"/>
         <result property="phone" column="phone"/>
         <result property="email" column="email"/>
         <result property="applicationChannel" column="application_channel"/>
@@ -24,7 +26,7 @@
     </resultMap>
 
     <sql id="BaseColumnList">
-        record_uuid, id, applicant_name, gender, position, phone, email,
+        record_uuid, id, applicant_name, gender, position, job_uuid, job_company_allocation_uuid, phone, email,
         application_channel, application_method, status, recruitment_type, initial_contact_person,
         initial_interview_time, retest_contact_person, retest_interview_time,
         created_at, updated_at
@@ -33,11 +35,11 @@
     <insert id="insert" parameterType="com.example.study11.entity.po.RecruitmentInfoPo"
             useGeneratedKeys="true" keyProperty="id" keyColumn="id">
         INSERT INTO `recruitment_info`
-        (record_uuid, applicant_name, gender, position, phone, email,
+        (record_uuid, applicant_name, gender, position, job_uuid, job_company_allocation_uuid, phone, email,
          application_channel, application_method, status, recruitment_type, initial_contact_person,
          initial_interview_time, retest_contact_person, retest_interview_time)
         VALUES
-        (#{recordUuid}, #{applicantName}, #{gender}, #{position}, #{phone}, #{email},
+        (#{recordUuid}, #{applicantName}, #{gender}, #{position}, #{jobUuid}, #{jobCompanyAllocationUuid}, #{phone}, #{email},
          #{applicationChannel}, #{applicationMethod}, #{status}, #{recruitmentType}, #{initialContactPerson},
          #{initialInterviewTime}, #{retestContactPerson}, #{retestInterviewTime})
     </insert>
@@ -151,6 +153,8 @@
         SET applicant_name = #{applicantName},
             gender = #{gender},
             position = #{position},
+            job_uuid = #{jobUuid},
+            job_company_allocation_uuid = #{jobCompanyAllocationUuid},
             phone = #{phone},
             email = #{email},
             application_channel = #{applicationChannel},

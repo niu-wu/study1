@@ -1,5 +1,6 @@
 package com.example.study11.entity.vo;
 
+import com.example.study11.entity.enums.UserRole;
 import lombok.Data;
 
 import java.util.Date;
@@ -14,6 +15,8 @@ public class UserVO {
     private Integer id;
 
     private String username;
+
+    private UserRole role;
 
     private Date createdAt;
 

@@ -22,6 +22,10 @@ public class RecruitmentInfoVO {
 
     private String position;
 
+    private String jobUuid;
+
+    private String jobCompanyAllocationUuid;
+
     private String phone;
 
     private String email;

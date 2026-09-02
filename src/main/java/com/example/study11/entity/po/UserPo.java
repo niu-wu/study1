@@ -1,5 +1,6 @@
 package com.example.study11.entity.po;
 
+import com.example.study11.entity.enums.UserRole;
 import lombok.Data;
 
 import java.util.Date;
@@ -15,6 +16,9 @@ public class UserPo {
     private String username;
 
     private String password;
+
+    /** 用户角色，由后端维护。 */
+    private UserRole role;
 
     private Date createdAt;
 
