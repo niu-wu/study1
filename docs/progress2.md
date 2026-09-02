@@ -1,7 +1,21 @@
 本轮完成情况
 - 在现有 user、登录、注册、BCrypt 密码和 x-token 鉴权体系上，补齐招聘后续流程。
 - 已实现简历接口、复试、录用通知、淘汰/人才库、入职账号关联、参数校验和跨模块自动化回归。
-- 当前执行 .\mvnw.cmd test：187 项通过，失败 0、错误 0、跳过 4 项可选数据库集成测试。
+- 当前执行 .\mvnw.cmd test：198 项通过，失败 0、错误 0、跳过 4 项可选数据库集成测试。
+
+## 2026-09-01 后端增量
+
+- 完成 V9-V11：用户角色、独立岗位/公司/配额表、候选人与岗位关联。
+- 新增岗位和公司选项后端接口、角色校验、软删除、状态与配额状态分离、岗位职责 HTML 清洗。
+- 全量测试当前为 198 项通过，失败 0，错误 0，跳过 4；真实 MySQL 集成契约测试此前已验证 4 项通过。
+- Apifox 验收已完成：环境为 `http://localhost:8081`，统一 Header 为 `x-token: {{token}}`，文档不保存 Token 或密码；覆盖当前用户、公司选项、岗位 CRUD、岗位状态和公司配额状态接口，包含成功、鉴权失败、普通用户 `403`、非法 UUID `400` 及重复状态 `409` 场景。前端任务继续标记为暂不执行。
+- 公司配额验收证据：岗位 `0be334cf-75b2-44a8-942e-43c9e9be52c7`、配额 `22222222-2222-4222-8222-222222222222`；`CLOSED -> OPEN` 返回 `200`，重复 `OPEN -> OPEN` 返回 `409`；数据库 `recruitment_job_company.status=OPEN`，状态历史为 `ALLOCATION` 范围，操作人来自管理员用户编号 `23`，配额变更不改变岗位整体状态。
+
+## Session 35：岗位编辑与状态冲突接口验收（2026-09-02）
+
+- Apifox 使用 `baseUrl=http://localhost:8081` 和 `x-token: {{token}}` 完成 `PUT /api/recruitment-jobs/{jobUuid}` 验证，返回 `200`；岗位业务字段更新成功，状态、软删除标识、版本和操作人仍由后端维护。
+- Apifox 完成岗位状态边界验证：`OPEN -> CLOSED` 返回 `200`；重复提交 `CLOSED -> CLOSED` 返回 `409`；`CLOSED -> COMPLETED` 返回 `422`；刷新登录令牌后验证 `COMPLETED -> OPEN` 返回 `422`，终态不可回退。
+- 本轮不记录真实 Token 或密码，前端页面和 UI 验证继续暂不执行。
   文件改动明细
 1. 招聘类型、复试与公共参数校验
 - RecruitmentInfoCreateDTO.java、RecruitmentInfoUpdateDTO.java、RecruitmentInfoPo.java、RecruitmentInfoVO.java、RecruitmentInfoServiceImpl.java、RecruitmentInfoMapper.xml：新增并持久化 recruitmentType，默认内部招聘 INTERNAL。

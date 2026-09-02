@@ -37,7 +37,7 @@
 | GET | `/api/offers/{recordUuid}` | 是 | 查询录用通知草稿或发送状态 |
 | POST | `/api/rejections/reject` | 是 | 淘汰候选人并归档人才库分类 |
 | POST | `/api/rejections/decline` | 是 | 放弃入职并归档人才库分类 |
-| GET | `/api/rejections/talent-pool` | 是 | 按分类、原因、阶段筛选人才库 |
+| GET | `/api/rejections/talent-pool` | 是 | 按分类、阶原因、段筛选人才库 |
 | POST | `/api/onboarding/process` | 是 | 办理入职并在现有 `user` 体系创建账号；初始密码只在成功响应出现 |
 | GET | `/api/onboarding/{recordUuid}` | 是 | 查询入职记录和关联用户信息；不返回初始密码 |
 
@@ -246,7 +246,7 @@ Session 18-27 的自动化测试、V3-V7 迁移和本地 `8081` HTTP 验证已�
 
 - Session 29：`Session29ValidationTest` 6 项通过，覆盖招聘手机号、招聘记录 UUID、简历编号、空文件和空 UUID 等非法参数，统一响应为 `400`。
 - Session 30：`Session30EndToEndTest` 2 项通过，覆盖招聘到复试、录用通知、入职创建现有 `user` 的流程，以及招聘到淘汰、人才库查询的流程；测试同时断言状态历史、Token 用户对应的操作人和事务结果。
-- 最新 Maven 复核：`./mvnw.cmd clean test` 为 187 项测试、失败 0、错误 0、跳过 4；`./mvnw.cmd package` 为 `BUILD SUCCESS`。`git diff --check` 通过，CRLF 提示不影响结果。
+- 最新 Maven 复核：`./mvnw.cmd clean test` 为 198 项测试、失败 0、错误 0、跳过 4；`./mvnw.cmd package` 为 `BUILD SUCCESS`。`git diff --check` 通过，CRLF 提示不影响结果。
 
 以下为用户于 2026-08-26 确认的 Apifox 实测汇总；不重复发送请求，不以本地自动化结果替代 Apifox 记录：
 
@@ -257,3 +257,72 @@ Session 18-27 的自动化测试、V3-V7 迁移和本地 `8081` HTTP 验证已�
 - Session 29：非法手机号、畸形 UUID、非法附件编号、空文件、空白 `recordUuid` 及缺少 `x-token` 的错误请求已验证，响应符合 `400/401` 约定。
 - Session 30：两条端到端流程已按顺序重放并核对环境变量、状态流转、状态历史和人才库结果。
 - Session 31：注册、登录、Token、用户接口、招聘基础接口、状态流转、简历、复试、录用通知、淘汰/人才库及入职接口已完成全量回归。
+
+## 2026-09-01 新增角色、岗位与公司接口
+
+### 当前用户
+
+- `GET /users/me`：读取当前登录用户资料；需要 `x-token: {{token}}`，响应包含 `role`，不包含密码。
+- `PUT /users/me`：修改当前用户的用户名、邮箱、手机号和生日；请求体中的 `role`、`status`、`isDeleted` 不参与更新，角色只能由后端维护。
+
+### 公司选项
+
+- `GET /api/recruitment-companies/options`：HR/ADMIN 查询未删除且 ACTIVE 的公司选项，用于岗位配额选择；USER 返回 `403`。
+
+### 岗位管理
+
+- `POST /api/recruitment-jobs`：HR/ADMIN 创建岗位。必填 `jobName`；可选 `jobCode`、`jobDescription`、`recruitmentRequirements`、`salaryMin`、`salaryMax`、`workLocation`。服务端强制 `status=OPEN`、`isDeleted=0`，并清洗职责 HTML。
+- `GET /api/recruitment-jobs/page`：HR/ADMIN 分页查询未软删除岗位，支持 `page`、`pageSize`、`jobName`、`status`。
+- `GET /api/recruitment-jobs/{jobUuid}`：查询岗位详情。
+- `PUT /api/recruitment-jobs/{jobUuid}`：编辑岗位业务字段；不允许客户端修改状态、删除标识、版本和操作人。
+- `PATCH /api/recruitment-jobs/{jobUuid}/status`：岗位状态动作，目标状态为 `OPEN`、`CLOSED`、`COMPLETED`；岗位状态独立于公司配额状态。
+- `DELETE /api/recruitment-jobs/{jobUuid}`：岗位软删除，数据库仅更新 `is_deleted=1`，不会物理删除岗位或状态审计数据。
+- `PATCH /api/recruitment-jobs/{jobUuid}/companies/{allocationUuid}/status`：更新指定公司配额状态；目标状态复用 `OPEN`、`CLOSED`、`COMPLETED` 枚举，但只写入 `recruitment_job_company.status`，并以 `scope=ALLOCATION` 记录审计，不改变岗位整体状态。
+
+以上新增接口均要求 Header `x-token: {{token}}`，并在 Service 层校验当前 `user.id` 的 `USER/HR/ADMIN` 角色；本轮代码、自动化测试和 Apifox 验收均已完成，前端展示不在本次范围内。
+
+### Apifox 验收记录
+
+- 环境：`baseUrl=http://localhost:8081`；认证：`x-token: {{token}}`。本文不保存 Token 或密码。
+- 操作人：管理员测试用户编号 `23`（角色 `ADMIN`）。
+- 岗位测试数据：`jobUuid=0be334cf-75b2-44a8-942e-43c9e9be52c7`。
+- 公司配额测试数据：`companyUuid=11111111-1111-4111-8111-111111111111`、`allocationUuid=22222222-2222-4222-8222-222222222222`。
+
+| 接口 | Apifox 结果 | 验证重点 |
+| --- | --- | --- |
+| `GET /users/me` | `200` | 返回当前资料和角色，不返回密码 |
+| `PUT /users/me` | `200` | 基础资料更新成功；角色、状态和逻辑删除字段不被客户端覆盖 |
+| `GET /api/recruitment-companies/options` | `200` | 返回未删除且 `ACTIVE` 的公司选项 |
+| `POST /api/recruitment-jobs` | `201` | 服务端生成编号，初始状态为 `OPEN`，职责 HTML 清洗生效 |
+| `GET /api/recruitment-jobs/page` | `200` | 分页返回活动岗位，软删除岗位排除 |
+| `GET /api/recruitment-jobs/{jobUuid}` | `200` / `404` | 活动岗位可查询，已软删除岗位不可查询 |
+| `PUT /api/recruitment-jobs/{jobUuid}` | `200` | 仅更新业务字段，状态和删除标识由后端维护 |
+| `PATCH /api/recruitment-jobs/{jobUuid}/status` | `200` / `409` / `422` | `OPEN <-> CLOSED` 成功；重复目标状态冲突；`CLOSED -> COMPLETED` 与终态 `COMPLETED -> OPEN` 均被状态规则拒绝 |
+| `DELETE /api/recruitment-jobs/{jobUuid}` | `204` | 软删除，审计记录保留 |
+| `PATCH /api/recruitment-jobs/{jobUuid}/companies/{allocationUuid}/status` | `200` / `409` | 配额 `CLOSED -> OPEN` 成功；重复 `OPEN -> OPEN` 冲突，仅更新配额状态 |
+
+边界抽查结果：缺少 `x-token` 返回 `401`；普通用户访问管理接口返回 `403`；合法状态路由下的畸形岗位 UUID 返回 `400`。岗位和公司配额接口的请求操作人均由已认证用户解析，客户端不能覆盖。
+
+公司配额数据库复核（只读）：
+
+```sql
+SELECT allocation_uuid, job_uuid, company_uuid, status
+FROM recruitment_job_company
+WHERE allocation_uuid = '22222222-2222-4222-8222-222222222222';
+
+SELECT id, scope, job_uuid, allocation_uuid, from_status, to_status,
+       operator_user_id, remark
+FROM recruitment_job_status_history
+WHERE allocation_uuid = '22222222-2222-4222-8222-222222222222'
+ORDER BY id DESC
+LIMIT 5;
+```
+
+核对结果：配额当前 `status=OPEN`；状态历史包含 `scope=ALLOCATION` 的 `OPEN -> CLOSED` 和 `CLOSED -> OPEN` 两条记录，后者由用户编号 `23` 操作；岗位整体状态未因配额变更而改变。默认 `./mvnw.cmd test` 本轮为 198 项通过、失败 0、错误 0、跳过 4 项可选数据库集成测试。
+
+### Session 35 补充验收记录（2026-09-02）
+
+- `PUT /api/recruitment-jobs/{jobUuid}`：使用现有管理员会话返回 `200`，岗位业务字段更新成功；状态、软删除标识、版本和操作人未被客户端覆盖。
+- `PATCH /api/recruitment-jobs/{jobUuid}/status`：在测试岗位 `23422bd8-bc94-47d9-9e81-80c35bea9d2f` 上刷新管理员登录令牌后重放 `COMPLETED -> OPEN`，返回 `422 Unprocessable Entity`，确认终态岗位不可回退；未记录真实 Token。
+- `PATCH /api/recruitment-jobs/{jobUuid}/status`：`OPEN -> CLOSED` 返回 `200`；重复提交 `CLOSED -> CLOSED` 返回 `409`；`CLOSED -> COMPLETED` 返回 `422`。
+- 本轮沿用 `baseUrl=http://localhost:8081` 和 `x-token: {{token}}`，不在文档保存真实 Token 或密码；前端页面及 UI 验证不在本次范围。

@@ -201,3 +201,16 @@ src/main/java/com/example/study11/common/model/
 - [x] 检查所有 Spring Bean、Mapper XML namespace、SQL 字段、事务和日志敏感信息。
 - [x] 在 Apifox 完成全量接口回归，并保存环境、接口和示例响应。
 - [x] 更新项目迁移说明和 Session 进度，不修改 study2。
+
+## Session 32-34：角色与岗位基础模块（2026-09-01）
+
+**依赖：** Session 31；前端任务暂不执行。
+
+- [x] V9 增加 `user.role`，固定 `USER/HR/ADMIN`，默认 `USER`，不修改现有测试账号角色；新增后端角色校验服务。
+- [x] 新增 `/users/me` 查询和更新接口，客户端不能提交或覆盖角色、状态和删除标识。
+- [x] V10 创建公司、岗位、岗位公司配额和岗位状态审计表；岗位软删除，岗位状态与公司配额状态分离，数字 `id` 自增且非主键。
+- [x] V11 为 `recruitment_info` 增加可空岗位及公司配额外键，保留历史 `position` 快照。
+- [x] 新增岗位创建、分页、详情、编辑、状态流转、软删除和公司选项查询后端代码，职责 HTML 使用 Jsoup 清洗。
+- [x] 新增公司配额状态动作接口，使用 `scope=ALLOCATION` 独立审计，不修改岗位整体状态。
+- [x] 新增迁移结构、角色权限、岗位 Service/Controller 和公司 Service 测试；真实 MySQL 集成测试 4 项通过。
+- [ ] 在 Apifox 逐项测试本 Session 新增接口：成功、401、USER 角色 403、非法参数、重复/状态冲突，并记录到 `docs/recruitment-backend-api.md`。
