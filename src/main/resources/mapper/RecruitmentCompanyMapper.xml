@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.study11.dao.RecruitmentCompanyDao">
+    <select id="findActiveOptions" resultType="com.example.study11.entity.po.RecruitmentCompanyPo">
+        SELECT company_uuid, id, company_name, current_headcount, status, is_deleted
+        FROM recruitment_company
+        WHERE is_deleted = 0 AND status = 'ACTIVE'
+        ORDER BY company_name ASC, company_uuid ASC
+    </select>
+</mapper>

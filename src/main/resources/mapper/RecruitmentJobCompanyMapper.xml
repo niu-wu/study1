@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.study11.dao.RecruitmentJobCompanyDao">
+    <resultMap id="AllocationMap" type="com.example.study11.entity.po.RecruitmentJobCompanyPo">
+        <id property="allocationUuid" column="allocation_uuid"/>
+        <result property="jobUuid" column="job_uuid"/>
+        <result property="companyUuid" column="company_uuid"/>
+        <result property="requiredHeadcount" column="required_headcount"/>
+        <result property="status" column="status"/>
+    </resultMap>
+    <select id="selectByUuidForUpdate" resultMap="AllocationMap">
+        SELECT allocation_uuid, job_uuid, company_uuid, required_headcount, status
+        FROM recruitment_job_company
+        WHERE job_uuid = #{jobUuid} AND allocation_uuid = #{allocationUuid}
+        FOR UPDATE
+    </select>
+    <update id="updateStatusIfCurrent">
+        UPDATE recruitment_job_company
+        SET status = #{toStatus}, updated_by_user_id = #{operatorUserId}
+        WHERE job_uuid = #{jobUuid}
+          AND allocation_uuid = #{allocationUuid}
+          AND status = #{fromStatus}
+    </update>
+</mapper>

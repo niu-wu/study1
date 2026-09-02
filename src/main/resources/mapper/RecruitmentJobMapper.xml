@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.study11.dao.RecruitmentJobDao">
+
+    <resultMap id="RecruitmentJobMap" type="com.example.study11.entity.po.RecruitmentJobPo">
+        <id property="jobUuid" column="job_uuid"/>
+        <result property="id" column="id"/>
+        <result property="jobName" column="job_name"/>
+        <result property="jobCode" column="job_code"/>
+        <result property="jobDescription" column="job_description"/>
+        <result property="recruitmentRequirements" column="recruitment_requirements"/>
+        <result property="salaryMin" column="salary_min"/>
+        <result property="salaryMax" column="salary_max"/>
+        <result property="workLocation" column="work_location"/>
+        <result property="status" column="status"/>
+        <result property="isDeleted" column="is_deleted"/>
+        <result property="createdByUserId" column="created_by_user_id"/>
+        <result property="updatedByUserId" column="updated_by_user_id"/>
+        <result property="version" column="version"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <sql id="BaseColumns">
+        job_uuid, id, job_name, job_code, job_description, recruitment_requirements,
+        salary_min, salary_max, work_location, status, is_deleted, created_by_user_id,
+        updated_by_user_id, version, created_at, updated_at
+    </sql>
+
+    <insert id="insert" parameterType="com.example.study11.entity.po.RecruitmentJobPo"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO recruitment_job
+        (job_uuid, job_name, job_code, job_description, recruitment_requirements,
+         salary_min, salary_max, work_location, status, is_deleted, created_by_user_id,
+         updated_by_user_id, version)
+        VALUES (#{jobUuid}, #{jobName}, #{jobCode}, #{jobDescription}, #{recruitmentRequirements},
+                #{salaryMin}, #{salaryMax}, #{workLocation}, #{status}, #{isDeleted}, #{createdByUserId},
+                #{updatedByUserId}, #{version})
+    </insert>
+
+    <select id="selectByJobUuid" resultMap="RecruitmentJobMap">
+        SELECT <include refid="BaseColumns"/>
+        FROM recruitment_job
+        WHERE job_uuid = #{jobUuid}
+    </select>
+
+    <select id="selectByJobUuidForUpdate" resultMap="RecruitmentJobMap">
+        SELECT <include refid="BaseColumns"/>
+        FROM recruitment_job
+        WHERE job_uuid = #{jobUuid}
+        FOR UPDATE
+    </select>
+
+    <sql id="Condition">
+        <where>
+            is_deleted = 0
+            <if test="request != null and request.jobName != null and request.jobName != ''">
+                AND job_name LIKE CONCAT('%', #{request.jobName}, '%')
+            </if>
+            <if test="request != null and request.status != null">
+                AND status = #{request.status}
+            </if>
+        </where>
+    </sql>
+
+    <select id="countByCondition" resultType="long">
+        SELECT COUNT(1) FROM recruitment_job
+        <include refid="Condition"/>
+    </select>
+
+    <select id="selectPage" resultMap="RecruitmentJobMap">
+        SELECT <include refid="BaseColumns"/>
+        FROM recruitment_job
+        <include refid="Condition"/>
+        ORDER BY id DESC, job_uuid ASC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <update id="updateByJobUuid" parameterType="com.example.study11.entity.po.RecruitmentJobPo">
+        UPDATE recruitment_job
+        SET job_name = #{jobName},
+            job_code = #{jobCode},
+            job_description = #{jobDescription},
+            recruitment_requirements = #{recruitmentRequirements},
+            salary_min = #{salaryMin},
+            salary_max = #{salaryMax},
+            work_location = #{workLocation},
+            updated_by_user_id = #{updatedByUserId},
+            version = version + 1
+        WHERE job_uuid = #{jobUuid}
+          AND is_deleted = 0
+          AND version = #{version}
+    </update>
+
+    <update id="updateStatusIfCurrent">
+        UPDATE recruitment_job
+        SET status = #{toStatus}, updated_by_user_id = #{operatorUserId}, version = version + 1
+        WHERE job_uuid = #{jobUuid} AND status = #{fromStatus} AND is_deleted = 0
+    </update>
+
+    <update id="softDelete">
+        UPDATE recruitment_job
+        SET is_deleted = 1, updated_by_user_id = #{operatorUserId}, version = version + 1
+        WHERE job_uuid = #{jobUuid} AND is_deleted = 0
+    </update>
+</mapper>
