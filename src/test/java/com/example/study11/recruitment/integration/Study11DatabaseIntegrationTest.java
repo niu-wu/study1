@@ -55,7 +55,16 @@ class Study11DatabaseIntegrationTest {
             "recruitment_company",
             "recruitment_job",
             "recruitment_job_company",
-            "recruitment_job_status_history");
+            "recruitment_job_status_history",
+            "employee",
+            "employee_education",
+            "employee_work_history",
+            "employee_training",
+            "employee_family",
+            "employee_emergency_contact",
+            "employee_salary_record",
+            "employee_assignment_record",
+            "employee_system_account");
 
     private static final Map<String, Set<String>> EXPECTED_PRIMARY_KEYS = Map.ofEntries(
             Map.entry("recruitment_info", Set.of("record_uuid")),
@@ -69,7 +78,16 @@ class Study11DatabaseIntegrationTest {
             Map.entry("recruitment_company", Set.of("company_uuid")),
             Map.entry("recruitment_job", Set.of("job_uuid")),
             Map.entry("recruitment_job_company", Set.of("allocation_uuid")),
-            Map.entry("recruitment_job_status_history", Set.of("id")));
+            Map.entry("recruitment_job_status_history", Set.of("id")),
+            Map.entry("employee", Set.of("employee_uuid")),
+            Map.entry("employee_education", Set.of("id")),
+            Map.entry("employee_work_history", Set.of("id")),
+            Map.entry("employee_training", Set.of("id")),
+            Map.entry("employee_family", Set.of("id")),
+            Map.entry("employee_emergency_contact", Set.of("id")),
+            Map.entry("employee_salary_record", Set.of("salary_uuid")),
+            Map.entry("employee_assignment_record", Set.of("assignment_uuid")),
+            Map.entry("employee_system_account", Set.of("account_uuid")));
 
     private static final Set<ForeignKey> EXPECTED_FOREIGN_KEYS = Set.of(
             new ForeignKey("recruitment_status_history", "record_uuid", "recruitment_info", "record_uuid"),
@@ -100,7 +118,21 @@ class Study11DatabaseIntegrationTest {
             new ForeignKey("recruitment_job_status_history", "allocation_uuid", "recruitment_job_company", "allocation_uuid"),
             new ForeignKey("recruitment_job_status_history", "operator_user_id", "user", "id"),
             new ForeignKey("recruitment_info", "job_uuid", "recruitment_job", "job_uuid"),
-            new ForeignKey("recruitment_info", "job_company_allocation_uuid", "recruitment_job_company", "allocation_uuid"));
+            new ForeignKey("recruitment_info", "job_company_allocation_uuid", "recruitment_job_company", "allocation_uuid"),
+            new ForeignKey("employee", "user_id", "user", "id"),
+            new ForeignKey("employee", "record_uuid", "onboarding_record", "record_uuid"),
+            new ForeignKey("employee", "hr_confirmed_by", "user", "id"),
+            new ForeignKey("employee_education", "employee_uuid", "employee", "employee_uuid"),
+            new ForeignKey("employee_work_history", "employee_uuid", "employee", "employee_uuid"),
+            new ForeignKey("employee_training", "employee_uuid", "employee", "employee_uuid"),
+            new ForeignKey("employee_family", "employee_uuid", "employee", "employee_uuid"),
+            new ForeignKey("employee_emergency_contact", "employee_uuid", "employee", "employee_uuid"),
+            new ForeignKey("employee_salary_record", "employee_uuid", "employee", "employee_uuid"),
+            new ForeignKey("employee_salary_record", "created_by", "user", "id"),
+            new ForeignKey("employee_assignment_record", "employee_uuid", "employee", "employee_uuid"),
+            new ForeignKey("employee_assignment_record", "operator_user_id", "user", "id"),
+            new ForeignKey("employee_system_account", "employee_uuid", "employee", "employee_uuid"),
+            new ForeignKey("employee_system_account", "operator_user_id", "user", "id"));
 
     private Connection connection;
 
@@ -141,15 +173,19 @@ class Study11DatabaseIntegrationTest {
                     "unexpected primary key for " + entry.getKey());
         }
 
-        Map<String, Set<String>> uniqueIndexes = Map.of(
-                "recruitment_info.uk_recruitment_info_id", Set.of("id"),
-                "retest_application.uk_retest_application_record_uuid", Set.of("record_uuid"),
-                "retest_review.uk_retest_review_record_uuid", Set.of("record_uuid"),
-                "offer_notice.uk_offer_notice_record_uuid", Set.of("record_uuid"),
-                "recruitment_rejection.uk_recruitment_rejection_record_uuid", Set.of("record_uuid"),
-                "onboarding_record.uk_onboarding_record_uuid", Set.of("record_uuid"),
-                "onboarding_record.uk_onboarding_user_id", Set.of("user_id"),
-                "candidate_resume.uk_candidate_resume_stored_filename", Set.of("stored_filename"));
+        Map<String, Set<String>> uniqueIndexes = Map.ofEntries(
+                Map.entry("recruitment_info.uk_recruitment_info_id", Set.of("id")),
+                Map.entry("retest_application.uk_retest_application_record_uuid", Set.of("record_uuid")),
+                Map.entry("retest_review.uk_retest_review_record_uuid", Set.of("record_uuid")),
+                Map.entry("offer_notice.uk_offer_notice_record_uuid", Set.of("record_uuid")),
+                Map.entry("recruitment_rejection.uk_recruitment_rejection_record_uuid", Set.of("record_uuid")),
+                Map.entry("onboarding_record.uk_onboarding_record_uuid", Set.of("record_uuid")),
+                Map.entry("onboarding_record.uk_onboarding_user_id", Set.of("user_id")),
+                Map.entry("candidate_resume.uk_candidate_resume_stored_filename", Set.of("stored_filename")),
+                Map.entry("employee.uk_employee_no", Set.of("employee_no")),
+                Map.entry("employee.uk_employee_user_id", Set.of("user_id")),
+                Map.entry("employee.uk_employee_record_uuid", Set.of("record_uuid")),
+                Map.entry("employee_salary_record.uk_employee_salary_month", Set.of("employee_uuid", "salary_month")));
         for (Map.Entry<String, Set<String>> entry : uniqueIndexes.entrySet()) {
             String[] name = entry.getKey().split("\\.", 2);
             assertEquals(entry.getValue(), indexColumns(name[0], name[1]),
@@ -166,6 +202,10 @@ class Study11DatabaseIntegrationTest {
         assertEquals("PENDING_INITIAL", columnDefault("recruitment_info", "status"));
         assertEquals("INTERNAL", columnDefault("recruitment_info", "recruitment_type"));
         assertEquals("DRAFT", columnDefault("offer_notice", "status"));
+        assertEquals("DRAFT", columnDefault("employee", "form_status"));
+        assertEquals("FULL_TIME", columnDefault("employee", "employment_type"));
+        assertEquals("PROBATION", columnDefault("employee", "employment_status"));
+        assertEquals("HEADQUARTERS", columnDefault("employee", "work_location"));
         assertEquals("USER", columnDefault("user", "role"));
 
         for (String table : EXPECTED_PRIMARY_KEYS.keySet()) {

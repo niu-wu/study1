@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.study11.dao.EmployeeSalaryRecordDao">
+
+    <resultMap id="EmployeeSalaryRecordMap" type="com.example.study11.entity.po.EmployeeSalaryRecordPo">
+        <id property="salaryUuid" column="salary_uuid"/>
+        <result property="id" column="id"/>
+        <result property="employeeUuid" column="employee_uuid"/>
+        <result property="salaryMonth" column="salary_month"/>
+        <result property="department" column="department"/>
+        <result property="scheduledDays" column="scheduled_days"/>
+        <result property="actualDays" column="actual_days"/>
+        <result property="leaveDays" column="leave_days"/>
+        <result property="baseSalary" column="base_salary"/>
+        <result property="positionAllowance" column="position_allowance"/>
+        <result property="overtimePay" column="overtime_pay"/>
+        <result property="bonus" column="bonus"/>
+        <result property="subsidy" column="subsidy"/>
+        <result property="otherPay" column="other_pay"/>
+        <result property="socialInsurance" column="social_insurance"/>
+        <result property="housingFund" column="housing_fund"/>
+        <result property="taxAmount" column="tax_amount"/>
+        <result property="taxRate" column="tax_rate"/>
+        <result property="grossPay" column="gross_pay"/>
+        <result property="netPay" column="net_pay"/>
+        <result property="remark" column="remark"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <sql id="BaseColumnList">
+        salary_uuid, id, employee_uuid, salary_month, department, scheduled_days, actual_days,
+        leave_days, base_salary, position_allowance, overtime_pay, bonus, subsidy, other_pay,
+        social_insurance, housing_fund, tax_amount, tax_rate, gross_pay, net_pay, remark,
+        created_by, created_at, updated_at
+    </sql>
+
+    <insert id="insert" parameterType="com.example.study11.entity.po.EmployeeSalaryRecordPo"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO `employee_salary_record`
+        (salary_uuid, employee_uuid, salary_month, department, scheduled_days, actual_days,
+         leave_days, base_salary, position_allowance, overtime_pay, bonus, subsidy, other_pay,
+         social_insurance, housing_fund, tax_amount, tax_rate, gross_pay, net_pay, remark,
+         created_by, created_at, updated_at)
+        VALUES
+        (#{salaryUuid}, #{employeeUuid}, #{salaryMonth}, #{department}, #{scheduledDays},
+         #{actualDays}, #{leaveDays}, #{baseSalary}, #{positionAllowance}, #{overtimePay},
+         #{bonus}, #{subsidy}, #{otherPay}, #{socialInsurance}, #{housingFund}, #{taxAmount},
+         #{taxRate}, #{grossPay}, #{netPay}, #{remark}, #{createdBy}, #{createdAt}, #{updatedAt})
+    </insert>
+
+    <select id="selectByEmployeeUuid" resultMap="EmployeeSalaryRecordMap">
+        SELECT <include refid="BaseColumnList"/>
+        FROM `employee_salary_record`
+        WHERE employee_uuid = #{employeeUuid}
+        ORDER BY salary_month DESC, id DESC
+    </select>
+</mapper>

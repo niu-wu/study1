@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.study11.dao.EmployeeSystemAccountDao">
+
+    <resultMap id="EmployeeSystemAccountMap" type="com.example.study11.entity.po.EmployeeSystemAccountPo">
+        <id property="accountUuid" column="account_uuid"/>
+        <result property="id" column="id"/>
+        <result property="employeeUuid" column="employee_uuid"/>
+        <result property="systemName" column="system_name"/>
+        <result property="accountName" column="account_name"/>
+        <result property="openedAt" column="opened_at"/>
+        <result property="operatorUserId" column="operator_user_id"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <sql id="BaseColumnList">
+        account_uuid, id, employee_uuid, system_name, account_name, opened_at,
+        operator_user_id, created_at, updated_at
+    </sql>
+
+    <insert id="insert" parameterType="com.example.study11.entity.po.EmployeeSystemAccountPo"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO `employee_system_account`
+        (account_uuid, employee_uuid, system_name, account_name, opened_at,
+         operator_user_id, created_at, updated_at)
+        VALUES
+        (#{accountUuid}, #{employeeUuid}, #{systemName}, #{accountName}, #{openedAt},
+         #{operatorUserId}, #{createdAt}, #{updatedAt})
+    </insert>
+
+    <select id="selectByEmployeeUuid" resultMap="EmployeeSystemAccountMap">
+        SELECT <include refid="BaseColumnList"/>
+        FROM `employee_system_account`
+        WHERE employee_uuid = #{employeeUuid}
+        ORDER BY created_at ASC, id ASC
+    </select>
+</mapper>

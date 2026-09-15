@@ -33,7 +33,13 @@ class InterceptorConfigTest {
         assertTrue(mappedInterceptor.matches(request("/api/resumes/upload")));
         assertTrue(mappedInterceptor.matches(request("/api/resumes/42")));
         assertTrue(mappedInterceptor.matches(request("/api/resumes/download/42")));
-        assertTrue(mappedInterceptor.matches(request("/api/resumes/list/record-1")));
+        assertTrue(mappedInterceptor.matches(request("/api/employee-archives/page")));
+        assertTrue(mappedInterceptor.matches(request("/api/employee-archives/statistics")));
+        assertTrue(mappedInterceptor.matches(request("/api/employee-archives/7c9e6679-7425-40de-944b-e07fc1f90ae7")));
+        assertTrue(mappedInterceptor.matches(request("/api/employee-archives/7c9e6679-7425-40de-944b-e07fc1f90ae7/photo")));
+        assertTrue(mappedInterceptor.matches(request("/api/employee-archives/7c9e6679-7425-40de-944b-e07fc1f90ae7/salaries")));
+        assertTrue(mappedInterceptor.matches(request("/api/employee-archives/7c9e6679-7425-40de-944b-e07fc1f90ae7/assignments")));
+        assertTrue(mappedInterceptor.matches(request("/api/employee-archives/7c9e6679-7425-40de-944b-e07fc1f90ae7/accounts")));
         assertFalse(mappedInterceptor.matches(request("/sso/login")));
         assertFalse(mappedInterceptor.matches(request("/sso/register")));
     }
