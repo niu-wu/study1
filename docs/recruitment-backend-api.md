@@ -1,5 +1,8 @@
 # study1-1 招聘后端接口记录
 
+> 后续开发请先看 `docs/项目交接.md`（功能边界、代码落点、可直接调用的接口）。  
+> 本文是历史逐接口 / Apifox 验收笔记，部分环境仍写 `8081`；当前默认端口是 `8080`。
+
 ## 运行与鉴权
 
 - 项目：`study1-1`
@@ -326,3 +329,45 @@ LIMIT 5;
 - `PATCH /api/recruitment-jobs/{jobUuid}/status`：在测试岗位 `23422bd8-bc94-47d9-9e81-80c35bea9d2f` 上刷新管理员登录令牌后重放 `COMPLETED -> OPEN`，返回 `422 Unprocessable Entity`，确认终态岗位不可回退；未记录真实 Token。
 - `PATCH /api/recruitment-jobs/{jobUuid}/status`：`OPEN -> CLOSED` 返回 `200`；重复提交 `CLOSED -> CLOSED` 返回 `409`；`CLOSED -> COMPLETED` 返回 `422`。
 - 本轮沿用 `baseUrl=http://localhost:8081` 和 `x-token: {{token}}`，不在文档保存真实 Token 或密码；前端页面及 UI 验证不在本次范围。
+
+## 2026-09-15 员工档案三个小模块
+
+统一前缀 `/api/employee-archives`，仅 HR/ADMIN。需要 Header `x-token`。未登录 `401`，USER `403`。档案不存在或尚未 `hr_confirmed` 返回 `404`。路径参数均为 `employeeUuid`。默认 `baseUrl` 跟当前启动端口（现在是 `8080`，旧环境曾是 `8081`，不要混）。
+
+人员分配 `/api/employee-assignments*` 仍只给待审核正式员工；档案接口只给已确认员工。两套入口不要合并。现有 `/api/employee-onboarding/me*`、`/api/part-time-employees*` 保持不变。
+
+### 列表、统计、有限 PATCH
+
+- `GET /api/employee-archives/page`：已确认档案分页。筛选 `fullName`、`phone`、`customerName`、`position` 为前缀匹配，`employmentStatus` 精确等于。空条件不加 WHERE。
+- `GET /api/employee-archives/statistics`：五张全局统计卡，不接受筛选参数。试用期、在职、总部、外派、离职不是互斥集合。兼职计入所有适用卡片。
+- `PATCH /api/employee-archives/{employeeUuid}`：只改 `department`、`companyEmail`、`probationEndDate`、`contractSalary`、`probationSalary`；`hiredAt` 仅当前值为空时允许补录，已有值再改 `409`。请求带 `employmentStatus`、`workLocation`、`customerName`、`regularizedAt`、`password` 等禁止字段返回 `400`。
+
+在职状态：`PROBATION` / `REGULAR` / `RESIGNED`。本轮没有接口把状态改成正式或离职。
+
+### 个人信息 Tab
+
+- `GET /api/employee-archives/{employeeUuid}`：头图 + 入职登记子表只读详情。不含 `progress`，不返回一寸照存储路径。头图含年龄、工龄、转正倒计时（非试用或无预计转正日为 `null`，已过期为 `0`）和人资系统账号（`user.username`）。
+- `GET /api/employee-archives/{employeeUuid}/photo`：下载一寸照。本轮不提供员工本人的档案 Tab。
+
+### 薪资福利 Tab
+
+- `GET /api/employee-archives/{employeeUuid}/salaries`：月度薪资倒序。含 `salaryTotal`（实发合计）、`overtimePayTotal`、`recordCount`。`dayCountsAreManualSnapshots=true`，`attendanceFlowsExcluded=true`。应出勤 / 实出勤 / 请假天数是 HR 手工可空快照，不来源于考勤，不参与应发/实发，也不表示考勤流水。本接口不返回加班/调休/请假/出差申请列表。
+- `POST /api/employee-archives/{employeeUuid}/salaries`：登记一个月。客户端只发明细金额；`grossPay`、`netPay` 由服务端计算并落库。计算公式：
+
+```text
+gross_pay = base_salary + position_allowance + overtime_pay + bonus + subsidy + other_pay
+net_pay   = gross_pay - social_insurance - housing_fund - tax_amount
+```
+
+请求带 `grossPay` / `netPay` / `salaryUuid` / `createdBy` 返回 `400`。同月重复 `409`。负金额或实发为负 `400`。三个天数可省略；填写则必须是 `>= 0` 的整数。
+
+### 岗位信息 Tab
+
+- `GET /api/employee-archives/{employeeUuid}/assignments`：稼动事件履历 + 汇总。`ENTER` 的结束日等于其后第一条 `RETURN.event_date`，没有则进行中。时长文案由服务端格式化。汇总：`projectCount` 为 `ENTER` 条数，进行中计入累计时长。
+- `POST /api/employee-archives/{employeeUuid}/assignments`：追加事件。先 `SELECT ... FOR UPDATE` 主档，再插事件并回写 `work_location` / `customer_name`。`ENTER` 仅当当前总部且必须有 `companyName`；`RETURN` 仅当当前外派且禁止带客户。非法转换 `422`，不写履历、主档不变。事件日期早于最后一条事件 `400`。
+- `GET /api/employee-archives/{employeeUuid}/accounts`：系统账号。第一条固定为只读「人力资源系统」（`user.username`），后面是手录行。响应无 `password` 字段。
+- `POST /api/employee-archives/{employeeUuid}/accounts`：登记账号。请求含 `password`、`accountUuid`、`operatorUserId` 返回 `400`。不存密码。
+
+### 自动化测试
+
+`./mvnw.cmd test`：313 项通过，失败 0，错误 0。本机 `study11` Flyway 版本为 14。Apifox 成功/失败请求本轮尚未补；补的时候 `baseUrl` 使用当前启动端口。
