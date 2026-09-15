@@ -35,4 +35,11 @@
         WHERE record_uuid = #{recordUuid}
         LIMIT 1
     </select>
+
+    <select id="selectByUserId" resultMap="OnboardingRecordMap">
+        SELECT <include refid="BaseColumnList"/>
+        FROM `onboarding_record`
+        WHERE user_id = #{userId}
+        LIMIT 1
+    </select>
 </mapper>

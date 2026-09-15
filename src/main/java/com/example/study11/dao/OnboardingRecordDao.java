@@ -9,4 +9,6 @@ public interface OnboardingRecordDao {
     int insert(OnboardingRecordPo onboardingRecordPo);
 
     OnboardingRecordPo selectByRecordUuid(@Param("recordUuid") String recordUuid);
+
+    OnboardingRecordPo selectByUserId(@Param("userId") Integer userId);
 }

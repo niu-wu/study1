@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.study11.dao.EmployeeEducationDao">
+
+    <resultMap id="EmployeeEducationMap" type="com.example.study11.entity.po.EmployeeEducationPo">
+        <id property="id" column="id"/>
+        <result property="employeeUuid" column="employee_uuid"/>
+        <result property="sortNo" column="sort_no"/>
+        <result property="startDate" column="start_date"/>
+        <result property="endDate" column="end_date"/>
+        <result property="schoolName" column="school_name"/>
+        <result property="major" column="major"/>
+        <result property="educationLevel" column="education_level"/>
+        <result property="certificate" column="certificate"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <sql id="BaseColumnList">
+        id, employee_uuid, sort_no, start_date, end_date, school_name, major,
+        education_level, certificate, created_at, updated_at
+    </sql>
+
+    <insert id="insert" parameterType="com.example.study11.entity.po.EmployeeEducationPo"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO `employee_education`
+        (employee_uuid, sort_no, start_date, end_date, school_name, major,
+         education_level, certificate, created_at, updated_at)
+        VALUES
+        (#{employeeUuid}, #{sortNo}, #{startDate}, #{endDate}, #{schoolName}, #{major},
+         #{educationLevel}, #{certificate}, #{createdAt}, #{updatedAt})
+    </insert>
+
+    <select id="selectByEmployeeUuid" resultMap="EmployeeEducationMap">
+        SELECT <include refid="BaseColumnList"/>
+        FROM `employee_education`
+        WHERE employee_uuid = #{employeeUuid}
+        ORDER BY sort_no ASC, id ASC
+    </select>
+
+    <delete id="deleteByEmployeeUuid">
+        DELETE FROM `employee_education`
+        WHERE employee_uuid = #{employeeUuid}
+    </delete>
+</mapper>

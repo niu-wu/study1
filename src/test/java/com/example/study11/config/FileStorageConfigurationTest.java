@@ -28,6 +28,12 @@ class FileStorageConfigurationTest {
                 "Resume uploads must default to PDF, DOC, and DOCX only");
         assertTrue(applicationYaml.contains("max-request-size: ${FILE_STORAGE_MAX_REQUEST_SIZE:11MB}"),
                 "Multipart request size must follow the resume storage limit");
+        assertTrue(applicationYaml.contains("  photo:\n    upload-dir: ${FILE_PHOTO_UPLOAD_DIR:./data/employee-photos}"),
+                "Photo uploads must use an overridable local storage root");
+        assertTrue(applicationYaml.contains("max-file-size: ${FILE_PHOTO_MAX_FILE_SIZE:2MB}"),
+                "Photo uploads must default to a 2MB size limit");
+        assertTrue(applicationYaml.contains("allowed-extensions:\n      - jpg\n      - jpeg\n      - png"),
+                "Photo uploads must default to JPG, JPEG, and PNG only");
     }
 
     private static String readApplicationYaml() throws IOException {

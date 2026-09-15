@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.study11.dao.EmployeeTrainingDao">
+
+    <resultMap id="EmployeeTrainingMap" type="com.example.study11.entity.po.EmployeeTrainingPo">
+        <id property="id" column="id"/>
+        <result property="employeeUuid" column="employee_uuid"/>
+        <result property="sortNo" column="sort_no"/>
+        <result property="startDate" column="start_date"/>
+        <result property="endDate" column="end_date"/>
+        <result property="institution" column="institution"/>
+        <result property="courseContent" column="course_content"/>
+        <result property="trainingResult" column="training_result"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <sql id="BaseColumnList">
+        id, employee_uuid, sort_no, start_date, end_date, institution, course_content,
+        training_result, created_at, updated_at
+    </sql>
+
+    <insert id="insert" parameterType="com.example.study11.entity.po.EmployeeTrainingPo"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO `employee_training`
+        (employee_uuid, sort_no, start_date, end_date, institution, course_content,
+         training_result, created_at, updated_at)
+        VALUES
+        (#{employeeUuid}, #{sortNo}, #{startDate}, #{endDate}, #{institution}, #{courseContent},
+         #{trainingResult}, #{createdAt}, #{updatedAt})
+    </insert>
+
+    <select id="selectByEmployeeUuid" resultMap="EmployeeTrainingMap">
+        SELECT <include refid="BaseColumnList"/>
+        FROM `employee_training`
+        WHERE employee_uuid = #{employeeUuid}
+        ORDER BY sort_no ASC, id ASC
+    </select>
+
+    <delete id="deleteByEmployeeUuid">
+        DELETE FROM `employee_training`
+        WHERE employee_uuid = #{employeeUuid}
+    </delete>
+</mapper>

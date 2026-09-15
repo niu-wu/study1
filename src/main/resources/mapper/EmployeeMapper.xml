@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.study11.dao.EmployeeDao">
+
+    <resultMap id="EmployeeMap" type="com.example.study11.entity.po.EmployeePo">
+        <id property="employeeUuid" column="employee_uuid"/>
+        <result property="id" column="id"/>
+        <result property="employeeNo" column="employee_no"/>
+        <result property="userId" column="user_id"/>
+        <result property="recordUuid" column="record_uuid"/>
+        <result property="employmentType" column="employment_type"/>
+        <result property="fullName" column="full_name"/>
+        <result property="gender" column="gender"/>
+        <result property="birthDate" column="birth_date"/>
+        <result property="position" column="position"/>
+        <result property="phone" column="phone"/>
+        <result property="email" column="email"/>
+        <result property="idCard" column="id_card"/>
+        <result property="maritalStatus" column="marital_status"/>
+        <result property="politicalStatus" column="political_status"/>
+        <result property="nationality" column="nationality"/>
+        <result property="ethnicity" column="ethnicity"/>
+        <result property="nativePlace" column="native_place"/>
+        <result property="hukouLocation" column="hukou_location"/>
+        <result property="currentAddress" column="current_address"/>
+        <result property="postalCode" column="postal_code"/>
+        <result property="healthStatus" column="health_status"/>
+        <result property="highestEducation" column="highest_education"/>
+        <result property="major" column="major"/>
+        <result property="professionalTitle" column="professional_title"/>
+        <result property="foreignLanguage" column="foreign_language"/>
+        <result property="hobbies" column="hobbies"/>
+        <result property="photoPath" column="photo_path"/>
+        <result property="wechatAccount" column="wechat_account"/>
+        <result property="wechatOpenid" column="wechat_openid"/>
+        <result property="wechatUnionid" column="wechat_unionid"/>
+        <result property="wechatBoundAt" column="wechat_bound_at"/>
+        <result property="formStatus" column="form_status"/>
+        <result property="submittedAt" column="submitted_at"/>
+        <result property="hrConfirmedAt" column="hr_confirmed_at"/>
+        <result property="hrConfirmedBy" column="hr_confirmed_by"/>
+        <result property="department" column="department"/>
+        <result property="companyEmail" column="company_email"/>
+        <result property="employmentStatus" column="employment_status"/>
+        <result property="workLocation" column="work_location"/>
+        <result property="hiredAt" column="hired_at"/>
+        <result property="probationEndDate" column="probation_end_date"/>
+        <result property="regularizedAt" column="regularized_at"/>
+        <result property="customerName" column="customer_name"/>
+        <result property="contractSalary" column="contract_salary"/>
+        <result property="probationSalary" column="probation_salary"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <sql id="BaseColumnList">
+        employee_uuid, id, employee_no, user_id, record_uuid, employment_type, full_name, gender,
+        birth_date, position, phone, email, id_card, marital_status, political_status, nationality,
+        ethnicity, native_place, hukou_location, current_address, postal_code, health_status,
+        highest_education, major, professional_title, foreign_language, hobbies, photo_path,
+        wechat_account, wechat_openid, wechat_unionid, wechat_bound_at, form_status,
+        submitted_at, hr_confirmed_at, hr_confirmed_by, department, company_email,
+        employment_status, work_location, hired_at, probation_end_date, regularized_at,
+        customer_name, contract_salary, probation_salary, created_at, updated_at
+    </sql>
+
+    <insert id="insert" parameterType="com.example.study11.entity.po.EmployeePo"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO `employee`
+        (employee_uuid, employee_no, user_id, record_uuid, employment_type, full_name, gender,
+         birth_date, position, phone, email, id_card, marital_status, political_status, nationality,
+         ethnicity, native_place, hukou_location, current_address, postal_code, health_status,
+         highest_education, major, professional_title, foreign_language, hobbies, photo_path,
+         wechat_account, wechat_openid, wechat_unionid, wechat_bound_at, form_status,
+         submitted_at, hr_confirmed_at, hr_confirmed_by, department, company_email,
+         employment_status, work_location, hired_at, probation_end_date, regularized_at,
+         customer_name, contract_salary, probation_salary, created_at, updated_at)
+        VALUES
+        (#{employeeUuid}, #{employeeNo}, #{userId}, #{recordUuid}, #{employmentType}, #{fullName},
+         #{gender}, #{birthDate}, #{position}, #{phone}, #{email}, #{idCard}, #{maritalStatus},
+         #{politicalStatus}, #{nationality}, #{ethnicity}, #{nativePlace}, #{hukouLocation},
+         #{currentAddress}, #{postalCode}, #{healthStatus}, #{highestEducation}, #{major},
+         #{professionalTitle}, #{foreignLanguage}, #{hobbies}, #{photoPath}, #{wechatAccount},
+         #{wechatOpenid}, #{wechatUnionid}, #{wechatBoundAt}, #{formStatus}, #{submittedAt},
+         #{hrConfirmedAt}, #{hrConfirmedBy}, #{department}, #{companyEmail}, #{employmentStatus},
+         #{workLocation}, #{hiredAt}, #{probationEndDate}, #{regularizedAt}, #{customerName},
+         #{contractSalary}, #{probationSalary}, #{createdAt}, #{updatedAt})
+    </insert>
+
+    <select id="selectByUserId" resultMap="EmployeeMap">
+        SELECT <include refid="BaseColumnList"/>
+        FROM `employee`
+        WHERE user_id = #{userId}
+        LIMIT 1
+    </select>
+
+    <select id="selectByUserIdForUpdate" resultMap="EmployeeMap">
+        SELECT <include refid="BaseColumnList"/>
+        FROM `employee`
+        WHERE user_id = #{userId}
+        LIMIT 1
+        FOR UPDATE
+    </select>
+
+    <select id="selectByEmployeeUuid" resultMap="EmployeeMap">
+        SELECT <include refid="BaseColumnList"/>
+        FROM `employee`
+        WHERE employee_uuid = #{employeeUuid}
+        LIMIT 1
+    </select>
+
+    <select id="selectByEmployeeUuidForUpdate" resultMap="EmployeeMap">
+        SELECT <include refid="BaseColumnList"/>
+        FROM `employee`
+        WHERE employee_uuid = #{employeeUuid}
+        LIMIT 1
+        FOR UPDATE
+    </select>
+
+    <select id="selectPendingAssignments" resultMap="EmployeeMap">
+        SELECT <include refid="BaseColumnList"/>
+        FROM `employee`
+        WHERE employment_type = 'FULL_TIME'
+          AND form_status = 'SUBMITTED'
+          AND hr_confirmed_at IS NULL
+        ORDER BY submitted_at ASC, id ASC
+    </select>
+
+    <update id="updateByEmployeeUuid" parameterType="com.example.study11.entity.po.EmployeePo">
+        UPDATE `employee`
+        SET full_name = #{fullName},
+            gender = #{gender},
+            birth_date = #{birthDate},
+            position = #{position},
+            phone = #{phone},
+            email = #{email},
+            id_card = #{idCard},
+            marital_status = #{maritalStatus},
+            political_status = #{politicalStatus},
+            nationality = #{nationality},
+            ethnicity = #{ethnicity},
+            native_place = #{nativePlace},
+            hukou_location = #{hukouLocation},
+            current_address = #{currentAddress},
+            postal_code = #{postalCode},
+            health_status = #{healthStatus},
+            highest_education = #{highestEducation},
+            major = #{major},
+            professional_title = #{professionalTitle},
+            foreign_language = #{foreignLanguage},
+            hobbies = #{hobbies},
+            photo_path = #{photoPath},
+            wechat_account = #{wechatAccount},
+            form_status = #{formStatus},
+            submitted_at = #{submittedAt},
+            updated_at = #{updatedAt}
+        WHERE employee_uuid = #{employeeUuid}
+    </update>
+
+    <update id="confirmAssignment">
+        UPDATE `employee`
+        SET hr_confirmed_at = #{hrConfirmedAt},
+            hr_confirmed_by = #{hrConfirmedBy},
+            updated_at = #{hrConfirmedAt}
+        WHERE employee_uuid = #{employeeUuid}
+          AND employment_type = 'FULL_TIME'
+          AND form_status = 'SUBMITTED'
+          AND hr_confirmed_at IS NULL
+    </update>
+
+    <sql id="ArchivePageCondition">
+        WHERE hr_confirmed_at IS NOT NULL
+        <if test="request.fullName != null and request.fullName != ''">
+            AND full_name LIKE CONCAT(#{request.fullName}, '%')
+        </if>
+        <if test="request.phone != null and request.phone != ''">
+            AND phone LIKE CONCAT(#{request.phone}, '%')
+        </if>
+        <if test="request.customerName != null and request.customerName != ''">
+            AND customer_name LIKE CONCAT(#{request.customerName}, '%')
+        </if>
+        <if test="request.position != null and request.position != ''">
+            AND position LIKE CONCAT(#{request.position}, '%')
+        </if>
+        <if test="request.employmentStatus != null and request.employmentStatus != ''">
+            AND employment_status = #{request.employmentStatus}
+        </if>
+    </sql>
+
+    <select id="countConfirmedArchives" resultType="long">
+        SELECT COUNT(1)
+        FROM `employee`
+        <include refid="ArchivePageCondition"/>
+    </select>
+
+    <select id="selectConfirmedArchives" resultMap="EmployeeMap">
+        SELECT <include refid="BaseColumnList"/>
+        FROM `employee`
+        <include refid="ArchivePageCondition"/>
+        ORDER BY hired_at DESC, id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="selectArchiveStatistics"
+            resultType="com.example.study11.entity.po.EmployeeArchiveStatisticsPo">
+        SELECT
+            COALESCE(SUM(CASE WHEN employment_status = 'PROBATION' THEN 1 ELSE 0 END), 0)
+                AS probation_count,
+            COALESCE(SUM(CASE WHEN employment_status != 'RESIGNED' THEN 1 ELSE 0 END), 0)
+                AS active_count,
+            COALESCE(SUM(CASE WHEN employment_status != 'RESIGNED'
+                AND work_location = 'HEADQUARTERS' THEN 1 ELSE 0 END), 0)
+                AS headquarters_count,
+            COALESCE(SUM(CASE WHEN employment_status != 'RESIGNED'
+                AND work_location = 'DISPATCHED' THEN 1 ELSE 0 END), 0)
+                AS dispatched_count,
+            COALESCE(SUM(CASE WHEN employment_status = 'RESIGNED' THEN 1 ELSE 0 END), 0)
+                AS resigned_count
+        FROM `employee`
+        WHERE hr_confirmed_at IS NOT NULL
+    </select>
+
+    <update id="updateArchiveFields" parameterType="com.example.study11.entity.po.EmployeePo">
+        UPDATE `employee`
+        SET department = #{department},
+            company_email = #{companyEmail},
+            probation_end_date = #{probationEndDate},
+            contract_salary = #{contractSalary},
+            probation_salary = #{probationSalary},
+            hired_at = #{hiredAt},
+            updated_at = #{updatedAt}
+        WHERE employee_uuid = #{employeeUuid}
+          AND hr_confirmed_at IS NOT NULL
+    </update>
+
+    <update id="updateAssignmentState" parameterType="com.example.study11.entity.po.EmployeePo">
+        UPDATE `employee`
+        SET work_location = #{workLocation},
+            customer_name = #{customerName},
+            updated_at = #{updatedAt}
+        WHERE employee_uuid = #{employeeUuid}
+          AND hr_confirmed_at IS NOT NULL
+    </update>
+</mapper>
