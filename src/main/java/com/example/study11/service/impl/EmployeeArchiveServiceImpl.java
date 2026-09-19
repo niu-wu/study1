@@ -5,20 +5,24 @@ import com.example.study11.config.TimeConfig;
 import com.example.study11.convert.EmployeeFormAssembler;
 import com.example.study11.dao.EmployeeAssignmentRecordDao;
 import com.example.study11.dao.EmployeeDao;
+import com.example.study11.dao.EmployeeInterviewDao;
 import com.example.study11.dao.EmployeeSalaryRecordDao;
 import com.example.study11.dao.EmployeeSystemAccountDao;
 import com.example.study11.dao.UserDao;
 import com.example.study11.entity.dto.EmployeeArchivePageRequest;
 import com.example.study11.entity.dto.EmployeeArchiveUpdateRequest;
 import com.example.study11.entity.dto.EmployeeAssignmentSaveRequest;
+import com.example.study11.entity.dto.EmployeeInterviewSaveRequest;
 import com.example.study11.entity.dto.EmployeeSalarySaveRequest;
 import com.example.study11.entity.dto.EmployeeSystemAccountSaveRequest;
 import com.example.study11.entity.enums.AssignmentType;
 import com.example.study11.entity.enums.EmploymentStatus;
 import com.example.study11.entity.enums.EmploymentType;
+import com.example.study11.entity.enums.InterviewType;
 import com.example.study11.entity.enums.WorkLocation;
 import com.example.study11.entity.po.EmployeeArchiveStatisticsPo;
 import com.example.study11.entity.po.EmployeeAssignmentRecordPo;
+import com.example.study11.entity.po.EmployeeInterviewPo;
 import com.example.study11.entity.po.EmployeePo;
 import com.example.study11.entity.po.EmployeeSalaryRecordPo;
 import com.example.study11.entity.po.EmployeeSystemAccountPo;
@@ -30,6 +34,7 @@ import com.example.study11.entity.vo.EmployeeArchiveStatisticsVO;
 import com.example.study11.entity.vo.EmployeeAssignmentListVO;
 import com.example.study11.entity.vo.EmployeeAssignmentRecordVO;
 import com.example.study11.entity.vo.EmployeeAssignmentSummaryVO;
+import com.example.study11.entity.vo.EmployeeInterviewVO;
 import com.example.study11.entity.vo.EmployeeOnboardingFormVO;
 import com.example.study11.entity.vo.EmployeePhotoFileVO;
 import com.example.study11.entity.vo.EmployeeSalaryListVO;
@@ -39,6 +44,8 @@ import com.example.study11.exception.ApiException;
 import com.example.study11.service.EmployeeArchiveService;
 import com.example.study11.service.EmployeePhotoStorageService;
 import com.example.study11.service.RoleAuthorizationService;
+import org.jsoup.Jsoup;
+import org.jsoup.safety.Safelist;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -74,6 +81,8 @@ public class EmployeeArchiveServiceImpl implements EmployeeArchiveService {
 
     private final EmployeeSystemAccountDao employeeSystemAccountDao;
 
+    private final EmployeeInterviewDao employeeInterviewDao;
+
     private final Clock clock;
 
     public EmployeeArchiveServiceImpl(EmployeeDao employeeDao,
@@ -84,6 +93,7 @@ public class EmployeeArchiveServiceImpl implements EmployeeArchiveService {
                                       EmployeeSalaryRecordDao employeeSalaryRecordDao,
                                       EmployeeAssignmentRecordDao employeeAssignmentRecordDao,
                                       EmployeeSystemAccountDao employeeSystemAccountDao,
+                                      EmployeeInterviewDao employeeInterviewDao,
                                       Clock clock) {
         this.employeeDao = employeeDao;
         this.roleAuthorizationService = roleAuthorizationService;
@@ -93,6 +103,7 @@ public class EmployeeArchiveServiceImpl implements EmployeeArchiveService {
         this.employeeSalaryRecordDao = employeeSalaryRecordDao;
         this.employeeAssignmentRecordDao = employeeAssignmentRecordDao;
         this.employeeSystemAccountDao = employeeSystemAccountDao;
+        this.employeeInterviewDao = employeeInterviewDao;
         this.clock = clock;
     }
 
@@ -365,6 +376,76 @@ public class EmployeeArchiveServiceImpl implements EmployeeArchiveService {
             }
         }
         return result;
+    }
+
+    @Override
+    @Transactional
+    public EmployeeInterviewVO saveInterview(String employeeUuid, EmployeeInterviewSaveRequest request,
+                                             Integer operatorUserId) {
+        roleAuthorizationService.requireHrOrAdmin(operatorUserId);
+        if (request == null) {
+            throw ApiException.badRequest("面谈记录不能为空");
+        }
+        request.rejectUnexpectedFields();
+        EmployeePo employee = requireConfirmedArchiveForUpdate(employeeUuid);
+
+        String cleanContent = request.getContent() == null || request.getContent().isBlank()
+                ? null
+                : Jsoup.clean(request.getContent(), Safelist.basic());
+
+        LocalDateTime now = LocalDateTime.now();
+        EmployeeInterviewPo record = new EmployeeInterviewPo();
+        record.setInterviewUuid(UUID.randomUUID().toString());
+        record.setEmployeeUuid(employee.getEmployeeUuid());
+        record.setInterviewType(request.getInterviewType().getCode());
+        record.setInterviewTime(request.getInterviewTime());
+        record.setContent(cleanContent);
+        record.setHandlerUserId(operatorUserId);
+        record.setCreatedBy(operatorUserId);
+        record.setCreatedAt(now);
+        record.setUpdatedAt(now);
+        if (employeeInterviewDao.insert(record) != 1) {
+            throw ApiException.internalServerError("面谈记录保存失败");
+        }
+        record.setHandlerName(currentUserName(operatorUserId));
+        return toInterviewVo(record);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<EmployeeInterviewVO> listInterviews(String employeeUuid, Integer operatorUserId) {
+        roleAuthorizationService.requireHrOrAdmin(operatorUserId);
+        requireConfirmedArchive(employeeUuid);
+        List<EmployeeInterviewPo> rows = employeeInterviewDao.selectByEmployeeUuid(employeeUuid);
+        List<EmployeeInterviewVO> result = new ArrayList<>();
+        if (rows != null) {
+            for (EmployeeInterviewPo row : rows) {
+                result.add(toInterviewVo(row));
+            }
+        }
+        return result;
+    }
+
+    private EmployeeInterviewVO toInterviewVo(EmployeeInterviewPo row) {
+        EmployeeInterviewVO vo = new EmployeeInterviewVO();
+        vo.setInterviewUuid(row.getInterviewUuid());
+        vo.setEmployeeUuid(row.getEmployeeUuid());
+        InterviewType type = InterviewType.fromCode(row.getInterviewType());
+        vo.setInterviewType(type);
+        vo.setInterviewTypeLabel(type != null ? type.getLabel() : row.getInterviewType());
+        vo.setInterviewTime(row.getInterviewTime());
+        vo.setContent(row.getContent());
+        vo.setHandlerName(row.getHandlerName());
+        vo.setCreatedAt(row.getCreatedAt());
+        return vo;
+    }
+
+    private String currentUserName(Integer userId) {
+        if (userId == null) {
+            return null;
+        }
+        UserPo user = userDao.selectUserById(userId);
+        return user == null ? null : user.getUsername();
     }
 
     private EmployeePo requireConfirmedArchiveForUpdate(String employeeUuid) {

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.study11.dao.EmployeeInterviewDao">
+
+    <resultMap id="EmployeeInterviewMap" type="com.example.study11.entity.po.EmployeeInterviewPo">
+        <id property="interviewUuid" column="interview_uuid"/>
+        <result property="id" column="id"/>
+        <result property="employeeUuid" column="employee_uuid"/>
+        <result property="interviewType" column="interview_type"/>
+        <result property="interviewTime" column="interview_time"/>
+        <result property="content" column="content"/>
+        <result property="handlerUserId" column="handler_user_id"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="handlerName" column="handler_name"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.example.study11.entity.po.EmployeeInterviewPo"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO `employee_interview`
+        (interview_uuid, employee_uuid, interview_type, interview_time, content,
+         handler_user_id, created_by, created_at, updated_at)
+        VALUES
+        (#{interviewUuid}, #{employeeUuid}, #{interviewType}, #{interviewTime}, #{content},
+         #{handlerUserId}, #{createdBy}, #{createdAt}, #{updatedAt})
+    </insert>
+
+    <select id="selectByEmployeeUuid" resultMap="EmployeeInterviewMap">
+        SELECT i.interview_uuid, i.id, i.employee_uuid, i.interview_type, i.interview_time,
+               i.content, i.handler_user_id, i.created_by, i.created_at, i.updated_at,
+               u.username AS handler_name
+        FROM `employee_interview` i
+        LEFT JOIN `user` u ON u.id = i.handler_user_id
+        WHERE i.employee_uuid = #{employeeUuid}
+        ORDER BY i.interview_time DESC, i.id DESC
+    </select>
+</mapper>

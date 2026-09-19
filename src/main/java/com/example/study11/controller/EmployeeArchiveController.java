@@ -4,6 +4,7 @@ import com.example.study11.common.model.PageResult;
 import com.example.study11.entity.dto.EmployeeArchivePageRequest;
 import com.example.study11.entity.dto.EmployeeArchiveUpdateRequest;
 import com.example.study11.entity.dto.EmployeeAssignmentSaveRequest;
+import com.example.study11.entity.dto.EmployeeInterviewSaveRequest;
 import com.example.study11.entity.dto.EmployeeSalarySaveRequest;
 import com.example.study11.entity.dto.EmployeeSystemAccountSaveRequest;
 import com.example.study11.entity.vo.EmployeeArchiveDetailVO;
@@ -11,6 +12,7 @@ import com.example.study11.entity.vo.EmployeeArchiveListItemVO;
 import com.example.study11.entity.vo.EmployeeArchiveStatisticsVO;
 import com.example.study11.entity.vo.EmployeeAssignmentListVO;
 import com.example.study11.entity.vo.EmployeeAssignmentRecordVO;
+import com.example.study11.entity.vo.EmployeeInterviewVO;
 import com.example.study11.entity.vo.EmployeePhotoFileVO;
 import com.example.study11.entity.vo.EmployeeSalaryListVO;
 import com.example.study11.entity.vo.EmployeeSalaryRecordVO;
@@ -142,6 +144,24 @@ public class EmployeeArchiveController {
             HttpServletRequest httpRequest) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(employeeArchiveService.saveAccount(employeeUuid, request, currentUserId(httpRequest)));
+    }
+
+    @GetMapping("/{employeeUuid}/interviews")
+    public ResponseEntity<List<EmployeeInterviewVO>> listInterviews(
+            @PathVariable @Pattern(regexp = RecruitmentRequestValidator.UUID_REGEX,
+                    message = "员工档案 UUID 格式不正确") String employeeUuid,
+            HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(employeeArchiveService.listInterviews(employeeUuid, currentUserId(httpRequest)));
+    }
+
+    @PostMapping("/{employeeUuid}/interviews")
+    public ResponseEntity<EmployeeInterviewVO> saveInterview(
+            @PathVariable @Pattern(regexp = RecruitmentRequestValidator.UUID_REGEX,
+                    message = "员工档案 UUID 格式不正确") String employeeUuid,
+            @RequestBody @Valid EmployeeInterviewSaveRequest request,
+            HttpServletRequest httpRequest) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(employeeArchiveService.saveInterview(employeeUuid, request, currentUserId(httpRequest)));
     }
 
     private static ResponseEntity<Resource> toPhotoResponse(EmployeePhotoFileVO photo) {
