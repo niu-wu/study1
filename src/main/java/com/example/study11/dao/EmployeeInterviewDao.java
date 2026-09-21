@@ -10,5 +10,11 @@ public interface EmployeeInterviewDao {
 
     int insert(EmployeeInterviewPo recordPo);
 
+    EmployeeInterviewPo selectByUuid(@Param("interviewUuid") String interviewUuid);
+
     List<EmployeeInterviewPo> selectByEmployeeUuid(@Param("employeeUuid") String employeeUuid);
+
+    int updateByUuid(EmployeeInterviewPo recordPo);
+
+    int deleteByUuid(@Param("interviewUuid") String interviewUuid);
 }

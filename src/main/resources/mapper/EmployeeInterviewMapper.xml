@@ -27,6 +27,16 @@
          #{handlerUserId}, #{createdBy}, #{createdAt}, #{updatedAt})
     </insert>
 
+    <select id="selectByUuid" resultMap="EmployeeInterviewMap">
+        SELECT i.interview_uuid, i.id, i.employee_uuid, i.interview_type, i.interview_time,
+               i.content, i.handler_user_id, i.created_by, i.created_at, i.updated_at,
+               u.username AS handler_name
+        FROM `employee_interview` i
+        LEFT JOIN `user` u ON u.id = i.handler_user_id
+        WHERE i.interview_uuid = #{interviewUuid}
+        LIMIT 1
+    </select>
+
     <select id="selectByEmployeeUuid" resultMap="EmployeeInterviewMap">
         SELECT i.interview_uuid, i.id, i.employee_uuid, i.interview_type, i.interview_time,
                i.content, i.handler_user_id, i.created_by, i.created_at, i.updated_at,
@@ -36,4 +46,18 @@
         WHERE i.employee_uuid = #{employeeUuid}
         ORDER BY i.interview_time DESC, i.id DESC
     </select>
+
+    <update id="updateByUuid" parameterType="com.example.study11.entity.po.EmployeeInterviewPo">
+        UPDATE `employee_interview`
+        SET interview_type = #{interviewType},
+            interview_time  = #{interviewTime},
+            content         = #{content},
+            updated_at      = #{updatedAt}
+        WHERE interview_uuid = #{interviewUuid}
+    </update>
+
+    <delete id="deleteByUuid">
+        DELETE FROM `employee_interview`
+        WHERE interview_uuid = #{interviewUuid}
+    </delete>
 </mapper>

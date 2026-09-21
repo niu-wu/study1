@@ -6,6 +6,8 @@ import com.example.study11.dao.EmployeeAssignmentRecordDao;
 import com.example.study11.dao.EmployeeDao;
 import com.example.study11.dao.EmployeeEducationDao;
 import com.example.study11.dao.EmployeeEmergencyContactDao;
+import com.example.study11.dao.EmployeeContractAttachmentDao;
+import com.example.study11.dao.EmployeeContractDao;
 import com.example.study11.dao.EmployeeInterviewDao;
 import com.example.study11.dao.EmployeeFamilyDao;
 import com.example.study11.dao.EmployeeSalaryRecordDao;
@@ -114,6 +116,12 @@ class EmployeeArchiveServiceImplTest {
     @Mock
     private EmployeeInterviewDao employeeInterviewDao;
 
+    @Mock
+    private EmployeeContractDao employeeContractDao;
+
+    @Mock
+    private EmployeeContractAttachmentDao employeeContractAttachmentDao;
+
     private EmployeeArchiveServiceImpl service;
 
     @BeforeEach
@@ -126,7 +134,7 @@ class EmployeeArchiveServiceImplTest {
         service = new EmployeeArchiveServiceImpl(
                 employeeDao, roleAuthorizationService, userDao, assembler,
                 employeePhotoStorageService, employeeSalaryRecordDao,
-                employeeAssignmentRecordDao, employeeSystemAccountDao, employeeInterviewDao, clock);
+                employeeAssignmentRecordDao, employeeSystemAccountDao, employeeInterviewDao, employeeContractDao, employeeContractAttachmentDao, clock);
     }
 
     @Test

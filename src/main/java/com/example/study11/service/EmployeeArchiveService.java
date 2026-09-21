@@ -14,6 +14,7 @@ import com.example.study11.entity.vo.EmployeeAssignmentListVO;
 import com.example.study11.entity.vo.EmployeeAssignmentRecordVO;
 import com.example.study11.entity.vo.EmployeeInterviewVO;
 import com.example.study11.entity.vo.EmployeePhotoFileVO;
+import com.example.study11.entity.vo.EmployeePrintPreviewVO;
 import com.example.study11.entity.vo.EmployeeSalaryListVO;
 import com.example.study11.entity.vo.EmployeeSalaryRecordVO;
 import com.example.study11.entity.vo.EmployeeSystemAccountVO;
@@ -53,4 +54,6 @@ public interface EmployeeArchiveService {
                                       Integer operatorUserId);
 
     List<EmployeeInterviewVO> listInterviews(String employeeUuid, Integer operatorUserId);
+
+    EmployeePrintPreviewVO getPrintPreview(String employeeUuid, Integer operatorUserId);
 }

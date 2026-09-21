@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.study11.dao.EmployeeContractDao">
+
+    <resultMap id="EmployeeContractMap" type="com.example.study11.entity.po.EmployeeContractPo">
+        <id property="contractUuid" column="contract_uuid"/>
+        <result property="id" column="id"/>
+        <result property="employeeUuid" column="employee_uuid"/>
+        <result property="contractNo" column="contract_no"/>
+        <result property="signType" column="sign_type"/>
+        <result property="contractTermType" column="contract_term_type"/>
+        <result property="startDate" column="start_date"/>
+        <result property="endDate" column="end_date"/>
+        <result property="salary" column="salary"/>
+        <result property="probationMonths" column="probation_months"/>
+        <result property="probationSalary" column="probation_salary"/>
+        <result property="companyName" column="company_name"/>
+        <result property="socialSecurityNo" column="social_security_no"/>
+        <result property="housingFundNo" column="housing_fund_no"/>
+        <result property="contractStatus" column="contract_status"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedBy" column="updated_by"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deleted" column="deleted"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.example.study11.entity.po.EmployeeContractPo"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO `employee_contract`
+        (contract_uuid, employee_uuid, contract_no, sign_type, contract_term_type,
+         start_date, end_date, salary, probation_months, probation_salary,
+         company_name, social_security_no, housing_fund_no, contract_status,
+         created_by, created_at, updated_by, updated_at)
+        VALUES
+        (#{contractUuid}, #{employeeUuid}, #{contractNo}, #{signType}, #{contractTermType},
+         #{startDate}, #{endDate}, #{salary}, #{probationMonths}, #{probationSalary},
+         #{companyName}, #{socialSecurityNo}, #{housingFundNo}, #{contractStatus},
+         #{createdBy}, NOW(), #{createdBy}, NOW())
+    </insert>
+
+    <select id="selectByUuid" resultMap="EmployeeContractMap">
+        SELECT * FROM `employee_contract`
+        WHERE contract_uuid = #{contractUuid} AND deleted = 0
+        LIMIT 1
+    </select>
+
+    <select id="selectByEmployeeUuid" resultMap="EmployeeContractMap">
+        SELECT * FROM `employee_contract`
+        WHERE employee_uuid = #{employeeUuid} AND deleted = 0
+        ORDER BY start_date DESC, id DESC
+    </select>
+
+    <update id="updateByUuid" parameterType="com.example.study11.entity.po.EmployeeContractPo">
+        UPDATE `employee_contract`
+        SET contract_no        = #{contractNo},
+            sign_type           = #{signType},
+            contract_term_type  = #{contractTermType},
+            start_date          = #{startDate},
+            end_date            = #{endDate},
+            salary              = #{salary},
+            probation_months    = #{probationMonths},
+            probation_salary    = #{probationSalary},
+            company_name        = #{companyName},
+            social_security_no  = #{socialSecurityNo},
+            housing_fund_no     = #{housingFundNo},
+            contract_status     = #{contractStatus},
+            updated_by          = #{updatedBy},
+            updated_at          = NOW()
+        WHERE contract_uuid = #{contractUuid} AND deleted = 0
+    </update>
+
+    <update id="deleteByUuid">
+        UPDATE `employee_contract`
+        SET deleted = 1, updated_by = #{updatedBy}, updated_at = NOW()
+        WHERE contract_uuid = #{contractUuid} AND deleted = 0
+    </update>
+</mapper>

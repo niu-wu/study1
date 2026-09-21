@@ -4,6 +4,8 @@ import com.example.study11.common.model.PageResult;
 import com.example.study11.config.TimeConfig;
 import com.example.study11.convert.EmployeeFormAssembler;
 import com.example.study11.dao.EmployeeAssignmentRecordDao;
+import com.example.study11.dao.EmployeeContractAttachmentDao;
+import com.example.study11.dao.EmployeeContractDao;
 import com.example.study11.dao.EmployeeDao;
 import com.example.study11.dao.EmployeeInterviewDao;
 import com.example.study11.dao.EmployeeSalaryRecordDao;
@@ -18,10 +20,15 @@ import com.example.study11.entity.dto.EmployeeSystemAccountSaveRequest;
 import com.example.study11.entity.enums.AssignmentType;
 import com.example.study11.entity.enums.EmploymentStatus;
 import com.example.study11.entity.enums.EmploymentType;
+import com.example.study11.entity.enums.AttachmentType;
+import com.example.study11.entity.enums.ContractSignType;
+import com.example.study11.entity.enums.ContractStatus;
 import com.example.study11.entity.enums.InterviewType;
 import com.example.study11.entity.enums.WorkLocation;
 import com.example.study11.entity.po.EmployeeArchiveStatisticsPo;
 import com.example.study11.entity.po.EmployeeAssignmentRecordPo;
+import com.example.study11.entity.po.EmployeeContractAttachmentPo;
+import com.example.study11.entity.po.EmployeeContractPo;
 import com.example.study11.entity.po.EmployeeInterviewPo;
 import com.example.study11.entity.po.EmployeePo;
 import com.example.study11.entity.po.EmployeeSalaryRecordPo;
@@ -34,9 +41,12 @@ import com.example.study11.entity.vo.EmployeeArchiveStatisticsVO;
 import com.example.study11.entity.vo.EmployeeAssignmentListVO;
 import com.example.study11.entity.vo.EmployeeAssignmentRecordVO;
 import com.example.study11.entity.vo.EmployeeAssignmentSummaryVO;
+import com.example.study11.entity.vo.EmployeeContractAttachmentVO;
+import com.example.study11.entity.vo.EmployeeContractVO;
 import com.example.study11.entity.vo.EmployeeInterviewVO;
 import com.example.study11.entity.vo.EmployeeOnboardingFormVO;
 import com.example.study11.entity.vo.EmployeePhotoFileVO;
+import com.example.study11.entity.vo.EmployeePrintPreviewVO;
 import com.example.study11.entity.vo.EmployeeSalaryListVO;
 import com.example.study11.entity.vo.EmployeeSalaryRecordVO;
 import com.example.study11.entity.vo.EmployeeSystemAccountVO;
@@ -83,6 +93,10 @@ public class EmployeeArchiveServiceImpl implements EmployeeArchiveService {
 
     private final EmployeeInterviewDao employeeInterviewDao;
 
+    private final EmployeeContractDao employeeContractDao;
+
+    private final EmployeeContractAttachmentDao employeeContractAttachmentDao;
+
     private final Clock clock;
 
     public EmployeeArchiveServiceImpl(EmployeeDao employeeDao,
@@ -94,6 +108,8 @@ public class EmployeeArchiveServiceImpl implements EmployeeArchiveService {
                                       EmployeeAssignmentRecordDao employeeAssignmentRecordDao,
                                       EmployeeSystemAccountDao employeeSystemAccountDao,
                                       EmployeeInterviewDao employeeInterviewDao,
+                                      EmployeeContractDao employeeContractDao,
+                                      EmployeeContractAttachmentDao employeeContractAttachmentDao,
                                       Clock clock) {
         this.employeeDao = employeeDao;
         this.roleAuthorizationService = roleAuthorizationService;
@@ -104,6 +120,8 @@ public class EmployeeArchiveServiceImpl implements EmployeeArchiveService {
         this.employeeAssignmentRecordDao = employeeAssignmentRecordDao;
         this.employeeSystemAccountDao = employeeSystemAccountDao;
         this.employeeInterviewDao = employeeInterviewDao;
+        this.employeeContractDao = employeeContractDao;
+        this.employeeContractAttachmentDao = employeeContractAttachmentDao;
         this.clock = clock;
     }
 
@@ -424,6 +442,88 @@ public class EmployeeArchiveServiceImpl implements EmployeeArchiveService {
             }
         }
         return result;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public EmployeePrintPreviewVO getPrintPreview(String employeeUuid, Integer operatorUserId) {
+        roleAuthorizationService.requireHrOrAdmin(operatorUserId);
+        EmployeePrintPreviewVO vo = new EmployeePrintPreviewVO();
+        vo.setBasicInfo(getDetail(employeeUuid, operatorUserId));
+
+        List<EmployeeSalaryRecordVO> salaries = new ArrayList<>();
+        List<EmployeeSalaryRecordPo> salaryRows = employeeSalaryRecordDao.selectByEmployeeUuid(employeeUuid);
+        if (salaryRows != null) {
+            for (EmployeeSalaryRecordPo row : salaryRows) {
+                salaries.add(toSalaryVo(row));
+            }
+        }
+        vo.setSalaries(salaries);
+
+        List<EmployeeSystemAccountVO> accounts = new ArrayList<>();
+        accounts.add(hrSystemAccountRow(requireConfirmedArchive(employeeUuid)));
+        List<EmployeeSystemAccountPo> accountRows = employeeSystemAccountDao.selectByEmployeeUuid(employeeUuid);
+        if (accountRows != null) {
+            for (EmployeeSystemAccountPo row : accountRows) {
+                accounts.add(toAccountVo(row, false));
+            }
+        }
+        vo.setAccounts(accounts);
+
+        List<EmployeeAssignmentRecordPo> assignmentRows = employeeAssignmentRecordDao.selectByEmployeeUuid(employeeUuid);
+        vo.setAssignments(toAssignmentVos(assignmentRows));
+
+        vo.setInterviews(listInterviews(employeeUuid, operatorUserId));
+
+
+        List<EmployeeContractAttachmentPo> attachmentRows = employeeContractAttachmentDao.selectByEmployeeUuid(employeeUuid);
+        List<EmployeeContractAttachmentVO> attachments = new ArrayList<>();
+        if (attachmentRows != null) {
+            for (EmployeeContractAttachmentPo row : attachmentRows) {
+                attachments.add(toAttachmentVo(row));
+            }
+        }
+        vo.setAttachments(attachments);
+
+        return vo;
+    }
+
+    private EmployeeContractVO toContractVo(EmployeeContractPo row) {
+        EmployeeContractVO vo = new EmployeeContractVO();
+        vo.setContractUuid(row.getContractUuid());
+        vo.setContractNo(row.getContractNo());
+        ContractSignType signType = ContractSignType.fromCode(row.getSignType());
+        vo.setSignType(signType != null ? signType.getCode() : row.getSignType());
+        vo.setSignTypeLabel(signType != null ? signType.getLabel() : row.getSignType());
+        vo.setContractTermType(row.getContractTermType());
+        vo.setStartDate(row.getStartDate());
+        vo.setEndDate(row.getEndDate());
+        vo.setSalary(row.getSalary());
+        vo.setProbationMonths(row.getProbationMonths());
+        vo.setProbationSalary(row.getProbationSalary());
+        vo.setCompanyName(row.getCompanyName());
+        vo.setSocialSecurityNo(row.getSocialSecurityNo());
+        vo.setHousingFundNo(row.getHousingFundNo());
+        ContractStatus status = ContractStatus.fromCode(row.getContractStatus());
+        vo.setContractStatus(status != null ? status.getCode() : row.getContractStatus());
+        vo.setContractStatusLabel(status != null ? status.getLabel() : row.getContractStatus());
+        vo.setCreatedAt(row.getCreatedAt());
+        return vo;
+    }
+
+    private EmployeeContractAttachmentVO toAttachmentVo(EmployeeContractAttachmentPo row) {
+        EmployeeContractAttachmentVO vo = new EmployeeContractAttachmentVO();
+        vo.setAttachmentUuid(row.getAttachmentUuid());
+        AttachmentType type = AttachmentType.fromCode(row.getAttachmentType());
+        vo.setAttachmentType(type != null ? type.getCode() : row.getAttachmentType());
+        vo.setAttachmentTypeLabel(type != null ? type.getLabel() : row.getAttachmentType());
+        vo.setFileName(row.getFileName());
+        vo.setFileUrl(row.getFileUrl());
+        vo.setFileType(row.getFileType());
+        vo.setFileSize(row.getFileSize());
+        vo.setSortOrder(row.getSortOrder());
+        vo.setCreatedAt(row.getCreatedAt());
+        return vo;
     }
 
     private EmployeeInterviewVO toInterviewVo(EmployeeInterviewPo row) {

@@ -14,6 +14,7 @@ import com.example.study11.entity.vo.EmployeeAssignmentListVO;
 import com.example.study11.entity.vo.EmployeeAssignmentRecordVO;
 import com.example.study11.entity.vo.EmployeeInterviewVO;
 import com.example.study11.entity.vo.EmployeePhotoFileVO;
+import com.example.study11.entity.vo.EmployeePrintPreviewVO;
 import com.example.study11.entity.vo.EmployeeSalaryListVO;
 import com.example.study11.entity.vo.EmployeeSalaryRecordVO;
 import com.example.study11.entity.vo.EmployeeSystemAccountVO;
@@ -162,6 +163,14 @@ public class EmployeeArchiveController {
             HttpServletRequest httpRequest) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(employeeArchiveService.saveInterview(employeeUuid, request, currentUserId(httpRequest)));
+    }
+
+    @GetMapping("/{employeeUuid}/print-preview")
+    public ResponseEntity<EmployeePrintPreviewVO> printPreview(
+            @PathVariable @Pattern(regexp = RecruitmentRequestValidator.UUID_REGEX,
+                    message = "员工档案 UUID 格式不正确") String employeeUuid,
+            HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(employeeArchiveService.getPrintPreview(employeeUuid, currentUserId(httpRequest)));
     }
 
     private static ResponseEntity<Resource> toPhotoResponse(EmployeePhotoFileVO photo) {
