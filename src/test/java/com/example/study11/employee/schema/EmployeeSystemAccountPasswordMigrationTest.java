@@ -14,7 +14,7 @@ class EmployeeSystemAccountPasswordMigrationTest {
 
     @Test
     void migrationAddsNullablePasswordOnSystemAccountOnly() throws IOException {
-        String sql = readResource("db/migration/V17__employee_system_account_password.sql").toLowerCase();
+        String sql = readResource("db/migration/V17.1__employee_system_account_password.sql").toLowerCase();
 
         assertTrue(sql.contains("alter table `employee_system_account`"));
         assertTrue(sql.contains("`password` varchar(200) default null"));
