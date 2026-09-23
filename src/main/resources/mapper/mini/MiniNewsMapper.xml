@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.study11.mini.dao.MiniNewsDao">
+
+    <resultMap id="MiniNewsMap" type="com.example.study11.mini.entity.po.MiniNewsPo">
+        <id property="id" column="id"/>
+        <result property="title" column="title"/>
+        <result property="summary" column="summary"/>
+        <result property="content" column="content"/>
+        <result property="publishDate" column="publish_date"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedBy" column="updated_by"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deleted" column="deleted"/>
+    </resultMap>
+
+    <select id="selectPage" resultMap="MiniNewsMap">
+        SELECT id, title, summary, content, publish_date
+        FROM `mini_news`
+        WHERE deleted = 0
+        ORDER BY publish_date DESC, id DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="selectCount" resultType="long">
+        SELECT COUNT(*) FROM `mini_news` WHERE deleted = 0
+    </select>
+
+    <select id="selectById" resultMap="MiniNewsMap">
+        SELECT * FROM `mini_news`
+        WHERE id = #{id} AND deleted = 0
+        LIMIT 1
+    </select>
+
+    <insert id="insert" parameterType="com.example.study11.mini.entity.po.MiniNewsPo"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO `mini_news`
+        (title, summary, content, publish_date, created_by, created_at, updated_by, updated_at)
+        VALUES
+        (#{title}, #{summary}, #{content}, #{publishDate}, #{createdBy}, NOW(), #{createdBy}, NOW())
+    </insert>
+
+    <update id="updateById" parameterType="com.example.study11.mini.entity.po.MiniNewsPo">
+        UPDATE `mini_news`
+        SET title        = #{title},
+            summary      = #{summary},
+            content      = #{content},
+            publish_date = #{publishDate},
+            updated_by   = #{updatedBy},
+            updated_at   = NOW()
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <update id="deleteById">
+        UPDATE `mini_news`
+        SET deleted = 1, updated_at = NOW()
+        WHERE id = #{id} AND deleted = 0
+    </update>
+</mapper>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.study11.mini.dao.MiniCompanyProfileDao">
+
+    <resultMap id="MiniCompanyProfileMap" type="com.example.study11.mini.entity.po.MiniCompanyProfilePo">
+        <id property="id" column="id"/>
+        <result property="title" column="title"/>
+        <result property="content" column="content"/>
+        <result property="stat1Value" column="stat1_value"/>
+        <result property="stat1Label" column="stat1_label"/>
+        <result property="stat2Value" column="stat2_value"/>
+        <result property="stat2Label" column="stat2_label"/>
+        <result property="stat3Value" column="stat3_value"/>
+        <result property="stat3Label" column="stat3_label"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedBy" column="updated_by"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deleted" column="deleted"/>
+    </resultMap>
+
+    <select id="selectLatest" resultMap="MiniCompanyProfileMap">
+        SELECT * FROM `mini_company_profile`
+        WHERE deleted = 0
+        ORDER BY id DESC
+        LIMIT 1
+    </select>
+
+    <insert id="insert" parameterType="com.example.study11.mini.entity.po.MiniCompanyProfilePo"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO `mini_company_profile`
+        (title, content, stat1_value, stat1_label, stat2_value, stat2_label,
+         stat3_value, stat3_label, created_by, created_at, updated_by, updated_at)
+        VALUES
+        (#{title}, #{content}, #{stat1Value}, #{stat1Label}, #{stat2Value}, #{stat2Label},
+         #{stat3Value}, #{stat3Label}, #{createdBy}, NOW(), #{createdBy}, NOW())
+    </insert>
+
+    <select id="selectById" resultMap="MiniCompanyProfileMap">
+        SELECT * FROM `mini_company_profile`
+        WHERE id = #{id} AND deleted = 0
+        LIMIT 1
+    </select>
+
+    <update id="updateById" parameterType="com.example.study11.mini.entity.po.MiniCompanyProfilePo">
+        UPDATE `mini_company_profile`
+        SET title        = #{title},
+            content      = #{content},
+            stat1_value  = #{stat1Value},
+            stat1_label  = #{stat1Label},
+            stat2_value  = #{stat2Value},
+            stat2_label  = #{stat2Label},
+            stat3_value  = #{stat3Value},
+            stat3_label  = #{stat3Label},
+            updated_by   = #{updatedBy},
+            updated_at   = NOW()
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <update id="deleteById">
+        UPDATE `mini_company_profile`
+        SET deleted = 1, updated_at = NOW()
+        WHERE id = #{id} AND deleted = 0
+    </update>
+</mapper>

@@ -8,6 +8,6 @@ import org.springframework.context.annotation.Configuration;
  * 放在独立配置类而非启动类,便于 Web 切片测试隔离持久层
  */
 @Configuration
-@MapperScan("com.example.study11.dao")
+@MapperScan({"com.example.study11.dao", "com.example.study11.mini.dao"})
 public class MyBatisConfig {
 }

@@ -18,6 +18,6 @@ public class InterceptorConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(tokenInterceptor)
                 .addPathPatterns("/**")
-                .excludePathPatterns("/sso/login", "/sso/register");
+                .excludePathPatterns("/sso/login", "/sso/register", "/api/mini/**");
     }
 }

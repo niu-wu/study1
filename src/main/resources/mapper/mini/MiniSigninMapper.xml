@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.study11.mini.dao.MiniSigninDao">
+
+    <resultMap id="MiniSigninMap" type="com.example.study11.mini.entity.po.MiniSigninPo">
+        <id property="signinUuid" column="signin_uuid"/>
+        <result property="id" column="id"/>
+        <result property="positionId" column="position_id"/>
+        <result property="positionName" column="position_name"/>
+        <result property="name" column="name"/>
+        <result property="gender" column="gender"/>
+        <result property="phone" column="phone"/>
+        <result property="email" column="email"/>
+        <result property="idCard" column="id_card"/>
+        <result property="birthDate" column="birth_date"/>
+        <result property="address" column="address"/>
+        <result property="applyChannel" column="apply_channel"/>
+        <result property="referrer" column="referrer"/>
+        <result property="interviewMode" column="interview_mode"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedBy" column="updated_by"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deleted" column="deleted"/>
+    </resultMap>
+
+    <resultMap id="MiniPositionMap" type="com.example.study11.mini.entity.vo.MiniPositionVO">
+        <result property="id" column="id"/>
+        <result property="jobName" column="job_name"/>
+        <result property="jobCode" column="job_code"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.example.study11.mini.entity.po.MiniSigninPo"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO `mini_signin`
+        (signin_uuid, position_id, position_name, name, gender, phone, email,
+         id_card, birth_date, address, apply_channel, referrer, interview_mode,
+         created_by, created_at, updated_by, updated_at)
+        VALUES
+        (#{signinUuid}, #{positionId}, #{positionName}, #{name}, #{gender}, #{phone}, #{email},
+         #{idCard}, #{birthDate}, #{address}, #{applyChannel}, #{referrer}, #{interviewMode},
+         #{createdBy}, NOW(), #{createdBy}, NOW())
+    </insert>
+
+    <select id="selectOpenPositions" resultMap="MiniPositionMap">
+        SELECT id, job_name, job_code
+        FROM `recruitment_job`
+        WHERE status = 'OPEN' AND is_deleted = 0
+        ORDER BY id DESC
+    </select>
+
+    <select id="selectPositionNameById" resultType="java.lang.String">
+        SELECT job_name FROM `recruitment_job`
+        WHERE id = #{positionId} AND status = 'OPEN' AND is_deleted = 0
+        LIMIT 1
+    </select>
+
+    <select id="selectByUuid" resultMap="MiniSigninMap">
+        SELECT * FROM `mini_signin`
+        WHERE signin_uuid = #{signinUuid} AND deleted = 0
+        LIMIT 1
+    </select>
+
+    <select id="selectList" resultMap="MiniSigninMap">
+        SELECT * FROM `mini_signin`
+        WHERE deleted = 0
+        <if test="phone != null and phone != ''">
+            AND phone LIKE CONCAT('%', #{phone}, '%')
+        </if>
+        <if test="name != null and name != ''">
+            AND name LIKE CONCAT('%', #{name}, '%')
+        </if>
+        ORDER BY created_at DESC
+    </select>
+
+    <update id="updateByUuid" parameterType="com.example.study11.mini.entity.po.MiniSigninPo">
+        UPDATE `mini_signin`
+        SET position_id   = #{positionId},
+            position_name = #{positionName},
+            name         = #{name},
+            gender       = #{gender},
+            phone        = #{phone},
+            email        = #{email},
+            id_card      = #{idCard},
+            birth_date   = #{birthDate},
+            address      = #{address},
+            apply_channel = #{applyChannel},
+            referrer     = #{referrer},
+            interview_mode = #{interviewMode},
+            updated_by   = #{updatedBy},
+            updated_at   = NOW()
+        WHERE signin_uuid = #{signinUuid} AND deleted = 0
+    </update>
+
+    <update id="deleteByUuid">
+        UPDATE `mini_signin`
+        SET deleted = 1, updated_at = NOW()
+        WHERE signin_uuid = #{signinUuid} AND deleted = 0
+    </update>
+</mapper>
