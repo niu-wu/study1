@@ -4,10 +4,12 @@ import com.example.study11.common.model.PageResult;
 import com.example.study11.entity.dto.EmployeeArchivePageRequest;
 import com.example.study11.entity.dto.EmployeeArchiveUpdateRequest;
 import com.example.study11.entity.dto.EmployeeAssignmentSaveRequest;
+import com.example.study11.entity.dto.EmployeeInterviewSaveRequest;
 import com.example.study11.entity.dto.EmployeeSalarySaveRequest;
 import com.example.study11.entity.dto.EmployeeSystemAccountSaveRequest;
 import com.example.study11.entity.enums.EmploymentStatus;
 import com.example.study11.entity.enums.EmploymentType;
+import com.example.study11.entity.enums.InterviewType;
 import com.example.study11.entity.dto.EmployeeTrainingItemDTO;
 import com.example.study11.entity.vo.EmployeeArchiveDetailVO;
 import com.example.study11.entity.vo.EmployeeArchiveHeaderVO;
@@ -15,6 +17,7 @@ import com.example.study11.entity.vo.EmployeeArchiveListItemVO;
 import com.example.study11.entity.vo.EmployeeArchiveStatisticsVO;
 import com.example.study11.entity.vo.EmployeeAssignmentListVO;
 import com.example.study11.entity.vo.EmployeeAssignmentRecordVO;
+import com.example.study11.entity.vo.EmployeeInterviewVO;
 import com.example.study11.entity.vo.EmployeeAssignmentSummaryVO;
 import com.example.study11.entity.vo.EmployeePhotoFileVO;
 import com.example.study11.entity.vo.EmployeeSalaryListVO;
@@ -38,6 +41,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -47,6 +51,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.nullValue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -351,20 +357,24 @@ class EmployeeArchiveControllerTest {
     }
 
     @Test
-    void createAccountMapsPasswordRejection() throws Exception {
+    void createAccountReturnsPassword() throws Exception {
+        EmployeeSystemAccountVO created = new EmployeeSystemAccountVO();
+        created.setAccountUuid("acc-1");
+        created.setSystemName("企业邮箱");
+        created.setPassword("secret");
         when(employeeArchiveService.saveAccount(eq(EMPLOYEE_UUID), any(EmployeeSystemAccountSaveRequest.class), eq(7)))
-                .thenThrow(ApiException.badRequest("password 不允许传入"));
+                .thenReturn(created);
 
         mockMvc.perform(post("/api/employee-archives/" + EMPLOYEE_UUID + "/accounts")
                         .requestAttr(TokenInterceptor.CURRENT_USER_ID_ATTRIBUTE, 7)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"systemName\":\"企业邮箱\",\"accountName\":\"a@b.com\",\"password\":\"secret\"}"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("password 不允许传入"));
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.password").value("secret"));
     }
 
     @Test
-    void listAccountsHidesPassword() throws Exception {
+    void listAccountsReturnsNullPasswordForHrRow() throws Exception {
         EmployeeSystemAccountVO hr = new EmployeeSystemAccountVO();
         hr.setSystemName("人力资源系统");
         hr.setAccountName("zhangsan");
@@ -375,8 +385,74 @@ class EmployeeArchiveControllerTest {
                         .requestAttr(TokenInterceptor.CURRENT_USER_ID_ATTRIBUTE, 7))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].systemName").value("人力资源系统"))
-                .andExpect(jsonPath("$[0].password").doesNotExist())
+                .andExpect(jsonPath("$[0].password").value(nullValue()))
                 .andExpect(jsonPath("$[0].readonly").value(true));
+    }
+
+    @Test
+    void createInterviewReturnsCreatedBody() throws Exception {
+        EmployeeInterviewVO created = new EmployeeInterviewVO();
+        created.setInterviewUuid("int-1");
+        created.setInterviewType(InterviewType.ONBOARDING);
+        created.setInterviewTypeLabel("入职");
+        created.setHandlerName("hr01");
+        when(employeeArchiveService.saveInterview(eq(EMPLOYEE_UUID), any(EmployeeInterviewSaveRequest.class), eq(7)))
+                .thenReturn(created);
+
+        mockMvc.perform(post("/api/employee-archives/" + EMPLOYEE_UUID + "/interviews")
+                        .requestAttr(TokenInterceptor.CURRENT_USER_ID_ATTRIBUTE, 7)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "interviewType": "ONBOARDING",
+                                  "interviewTime": "2026-09-19T10:00:00",
+                                  "content": "<p>入职面谈</p>"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.interviewUuid").value("int-1"))
+                .andExpect(jsonPath("$.interviewType").value("ONBOARDING"))
+                .andExpect(jsonPath("$.interviewTypeLabel").value("入职"))
+                .andExpect(jsonPath("$.handlerName").value("hr01"));
+    }
+
+    @Test
+    void listInterviewsReturnsTypeLabel() throws Exception {
+        EmployeeInterviewVO item = new EmployeeInterviewVO();
+        item.setInterviewUuid("int-1");
+        item.setInterviewType(InterviewType.INTERVIEW);
+        item.setInterviewTypeLabel("面试应聘");
+        item.setInterviewTime(LocalDateTime.of(2026, 9, 19, 10, 0));
+        when(employeeArchiveService.listInterviews(EMPLOYEE_UUID, 7)).thenReturn(List.of(item));
+
+        mockMvc.perform(get("/api/employee-archives/" + EMPLOYEE_UUID + "/interviews")
+                        .requestAttr(TokenInterceptor.CURRENT_USER_ID_ATTRIBUTE, 7))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].interviewUuid").value("int-1"))
+                .andExpect(jsonPath("$[0].interviewType").value("INTERVIEW"))
+                .andExpect(jsonPath("$[0].interviewTypeLabel").value("面试应聘"));
+    }
+
+    @Test
+    void deleteInterviewReturnsNoContent() throws Exception {
+        mockMvc.perform(delete("/api/employee-archives/" + EMPLOYEE_UUID
+                        + "/interviews/6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+                        .requestAttr(TokenInterceptor.CURRENT_USER_ID_ATTRIBUTE, 7))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void regularizeReturnsUpdatedStatus() throws Exception {
+        EmployeeArchiveListItemVO item = listItem();
+        item.setEmploymentStatus(EmploymentStatus.REGULAR);
+        item.setRegularizedAt(LocalDate.of(2026, 9, 15));
+        when(employeeArchiveService.regularize(EMPLOYEE_UUID, 7)).thenReturn(item);
+
+        mockMvc.perform(post("/api/employee-archives/" + EMPLOYEE_UUID + "/regularization")
+                        .requestAttr(TokenInterceptor.CURRENT_USER_ID_ATTRIBUTE, 7))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.employmentStatus").value("REGULAR"))
+                .andExpect(jsonPath("$.regularizedAt").value("2026-09-15"));
     }
 
     private static EmployeeArchiveListItemVO listItem() {

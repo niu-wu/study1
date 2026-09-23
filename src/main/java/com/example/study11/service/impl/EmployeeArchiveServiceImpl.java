@@ -14,6 +14,8 @@ import com.example.study11.dao.UserDao;
 import com.example.study11.entity.dto.EmployeeArchivePageRequest;
 import com.example.study11.entity.dto.EmployeeArchiveUpdateRequest;
 import com.example.study11.entity.dto.EmployeeAssignmentSaveRequest;
+import com.example.study11.entity.dto.EmployeeContractAttachmentSaveRequest;
+import com.example.study11.entity.dto.EmployeeContractSaveRequest;
 import com.example.study11.entity.dto.EmployeeInterviewSaveRequest;
 import com.example.study11.entity.dto.EmployeeSalarySaveRequest;
 import com.example.study11.entity.dto.EmployeeSystemAccountSaveRequest;
@@ -23,7 +25,9 @@ import com.example.study11.entity.enums.EmploymentType;
 import com.example.study11.entity.enums.AttachmentType;
 import com.example.study11.entity.enums.ContractSignType;
 import com.example.study11.entity.enums.ContractStatus;
+import com.example.study11.entity.enums.ContractTermType;
 import com.example.study11.entity.enums.InterviewType;
+import com.example.study11.entity.enums.PrintSection;
 import com.example.study11.entity.enums.WorkLocation;
 import com.example.study11.entity.po.EmployeeArchiveStatisticsPo;
 import com.example.study11.entity.po.EmployeeAssignmentRecordPo;
@@ -68,7 +72,9 @@ import java.time.LocalDateTime;
 import java.time.Period;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /** 已确认员工档案列表、详情、全局统计和有限 PATCH。 */
@@ -370,6 +376,7 @@ public class EmployeeArchiveServiceImpl implements EmployeeArchiveService {
         record.setEmployeeUuid(employee.getEmployeeUuid());
         record.setSystemName(systemName);
         record.setAccountName(accountName);
+        record.setPassword(trimToNull(request.getPassword()));
         record.setOpenedAt(request.getOpenedAt());
         record.setOperatorUserId(operatorUserId);
         record.setCreatedAt(now);
@@ -407,9 +414,7 @@ public class EmployeeArchiveServiceImpl implements EmployeeArchiveService {
         request.rejectUnexpectedFields();
         EmployeePo employee = requireConfirmedArchiveForUpdate(employeeUuid);
 
-        String cleanContent = request.getContent() == null || request.getContent().isBlank()
-                ? null
-                : Jsoup.clean(request.getContent(), Safelist.basic());
+        String cleanContent = cleanInterviewContent(request.getContent());
 
         LocalDateTime now = LocalDateTime.now();
         EmployeeInterviewPo record = new EmployeeInterviewPo();
@@ -445,46 +450,205 @@ public class EmployeeArchiveServiceImpl implements EmployeeArchiveService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public EmployeePrintPreviewVO getPrintPreview(String employeeUuid, Integer operatorUserId) {
+    @Transactional
+    public EmployeeInterviewVO updateInterview(String employeeUuid, String interviewUuid,
+                                               EmployeeInterviewSaveRequest request, Integer operatorUserId) {
         roleAuthorizationService.requireHrOrAdmin(operatorUserId);
+        if (request == null) {
+            throw ApiException.badRequest("面谈记录不能为空");
+        }
+        request.rejectUnexpectedFields();
+        EmployeePo employee = requireConfirmedArchiveForUpdate(employeeUuid);
+        EmployeeInterviewPo existing = requireInterview(employee.getEmployeeUuid(), interviewUuid);
+        if (request.getInterviewType() == null) {
+            throw ApiException.badRequest("面谈类型不能为空");
+        }
+        if (request.getInterviewTime() == null) {
+            throw ApiException.badRequest("面谈时间不能为空");
+        }
+        existing.setInterviewType(request.getInterviewType().getCode());
+        existing.setInterviewTime(request.getInterviewTime());
+        existing.setContent(cleanInterviewContent(request.getContent()));
+        existing.setUpdatedAt(LocalDateTime.now());
+        if (employeeInterviewDao.updateByUuid(existing) != 1) {
+            throw ApiException.notFound("面谈记录不存在");
+        }
+        return toInterviewVo(existing);
+    }
+
+    @Override
+    @Transactional
+    public void deleteInterview(String employeeUuid, String interviewUuid, Integer operatorUserId) {
+        roleAuthorizationService.requireHrOrAdmin(operatorUserId);
+        EmployeePo employee = requireConfirmedArchiveForUpdate(employeeUuid);
+        EmployeeInterviewPo existing = requireInterview(employee.getEmployeeUuid(), interviewUuid);
+        if (employeeInterviewDao.deleteByUuid(existing.getInterviewUuid()) != 1) {
+            throw ApiException.notFound("面谈记录不存在");
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<EmployeeContractVO> listContracts(String employeeUuid, Integer operatorUserId) {
+        roleAuthorizationService.requireHrOrAdmin(operatorUserId);
+        requireConfirmedArchive(employeeUuid);
+        return loadContracts(employeeUuid);
+    }
+
+    @Override
+    @Transactional
+    public EmployeeContractVO saveContract(String employeeUuid, EmployeeContractSaveRequest request,
+                                           Integer operatorUserId) {
+        roleAuthorizationService.requireHrOrAdmin(operatorUserId);
+        if (request == null) {
+            throw ApiException.badRequest("劳动合同不能为空");
+        }
+        request.rejectUnexpectedFields();
+        EmployeePo employee = requireConfirmedArchiveForUpdate(employeeUuid);
+        if (request.getSignType() == null) {
+            throw ApiException.badRequest("签订类型不能为空");
+        }
+        ContractTermType termType = request.getContractTermType() == null
+                ? ContractTermType.FIXED : request.getContractTermType();
+        if (termType == ContractTermType.UNLIMITED && request.getEndDate() != null) {
+            throw ApiException.badRequest("无固定期限合同不能填写到期日");
+        }
+        if (request.getProbationMonths() != null && request.getProbationMonths() < 0) {
+            throw ApiException.badRequest("试用期月数不能为负数");
+        }
+        ContractStatus status = request.getContractStatus() == null
+                ? ContractStatus.EXECUTING : request.getContractStatus();
+
+        EmployeeContractPo record = new EmployeeContractPo();
+        record.setContractUuid(UUID.randomUUID().toString());
+        record.setEmployeeUuid(employee.getEmployeeUuid());
+        record.setContractNo(trimToNull(request.getContractNo()));
+        record.setSignType(request.getSignType().getCode());
+        record.setContractTermType(termType.getCode());
+        record.setStartDate(request.getStartDate());
+        record.setEndDate(request.getEndDate());
+        if (request.getSalary() != null) {
+            record.setSalary(requireNonNegative(request.getSalary(), "合同薪资").setScale(2, RoundingMode.HALF_UP));
+        }
+        record.setProbationMonths(request.getProbationMonths());
+        if (request.getProbationSalary() != null) {
+            record.setProbationSalary(requireNonNegative(request.getProbationSalary(), "试用期薪资")
+                    .setScale(2, RoundingMode.HALF_UP));
+        }
+        record.setCompanyName(trimToNull(request.getCompanyName()));
+        record.setSocialSecurityNo(trimToNull(request.getSocialSecurityNo()));
+        record.setHousingFundNo(trimToNull(request.getHousingFundNo()));
+        record.setContractStatus(status.getCode());
+        record.setCreatedBy(operatorUserId);
+        record.setCreatedAt(LocalDateTime.now());
+        if (employeeContractDao.insert(record) != 1) {
+            throw ApiException.internalServerError("劳动合同保存失败");
+        }
+        return toContractVo(record);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<EmployeeContractAttachmentVO> listAttachments(String employeeUuid, Integer operatorUserId) {
+        roleAuthorizationService.requireHrOrAdmin(operatorUserId);
+        requireConfirmedArchive(employeeUuid);
+        return loadAttachments(employeeUuid);
+    }
+
+    @Override
+    @Transactional
+    public EmployeeContractAttachmentVO saveAttachment(String employeeUuid,
+                                                       EmployeeContractAttachmentSaveRequest request,
+                                                       Integer operatorUserId) {
+        roleAuthorizationService.requireHrOrAdmin(operatorUserId);
+        if (request == null) {
+            throw ApiException.badRequest("附件不能为空");
+        }
+        request.rejectUnexpectedFields();
+        EmployeePo employee = requireConfirmedArchiveForUpdate(employeeUuid);
+        if (request.getAttachmentType() == null) {
+            throw ApiException.badRequest("附件类型不能为空");
+        }
+        String fileName = trimToNull(request.getFileName());
+        if (fileName == null) {
+            throw ApiException.badRequest("文件名不能为空");
+        }
+        if (request.getFileSize() != null && request.getFileSize() < 0) {
+            throw ApiException.badRequest("文件大小不能为负数");
+        }
+        if (request.getSortOrder() != null && request.getSortOrder() < 0) {
+            throw ApiException.badRequest("排序号不能为负数");
+        }
+        String fileUrl = request.getFileUrl() == null ? "" : request.getFileUrl().trim();
+
+        EmployeeContractAttachmentPo record = new EmployeeContractAttachmentPo();
+        record.setAttachmentUuid(UUID.randomUUID().toString());
+        record.setEmployeeUuid(employee.getEmployeeUuid());
+        record.setAttachmentType(request.getAttachmentType().getCode());
+        record.setFileName(fileName);
+        record.setFileUrl(fileUrl);
+        record.setFileType(trimToNull(request.getFileType()));
+        record.setFileSize(request.getFileSize());
+        record.setSortOrder(request.getSortOrder() == null ? 0 : request.getSortOrder());
+        record.setCreatedBy(operatorUserId);
+        record.setCreatedAt(LocalDateTime.now());
+        if (employeeContractAttachmentDao.insert(record) != 1) {
+            throw ApiException.internalServerError("附件保存失败");
+        }
+        return toAttachmentVo(record);
+    }
+
+    @Override
+    @Transactional
+    public EmployeeArchiveListItemVO regularize(String employeeUuid, Integer operatorUserId) {
+        roleAuthorizationService.requireHrOrAdmin(operatorUserId);
+        EmployeePo employee = requireConfirmedArchiveForUpdate(employeeUuid);
+        if (!EmploymentStatus.PROBATION.getCode().equals(employee.getEmploymentStatus())) {
+            throw ApiException.badRequest("只有试用员工可以办理转正");
+        }
+        LocalDate today = LocalDate.now(clock.withZone(TimeConfig.BUSINESS_ZONE));
+        LocalDateTime now = LocalDateTime.now();
+        if (employeeDao.regularize(employee.getEmployeeUuid(), today, now) != 1) {
+            throw ApiException.badRequest("只有试用员工可以办理转正");
+        }
+        employee.setEmploymentStatus(EmploymentStatus.REGULAR.getCode());
+        employee.setRegularizedAt(today);
+        employee.setUpdatedAt(now);
+        return toListItem(employee);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public EmployeePrintPreviewVO getPrintPreview(String employeeUuid, List<String> sections,
+                                                   Integer operatorUserId) {
+        roleAuthorizationService.requireHrOrAdmin(operatorUserId);
+        Set<PrintSection> selected = parseSections(sections);
         EmployeePrintPreviewVO vo = new EmployeePrintPreviewVO();
-        vo.setBasicInfo(getDetail(employeeUuid, operatorUserId));
-
-        List<EmployeeSalaryRecordVO> salaries = new ArrayList<>();
-        List<EmployeeSalaryRecordPo> salaryRows = employeeSalaryRecordDao.selectByEmployeeUuid(employeeUuid);
-        if (salaryRows != null) {
-            for (EmployeeSalaryRecordPo row : salaryRows) {
-                salaries.add(toSalaryVo(row));
-            }
+        if (selected == null) {
+            vo.setBasicInfo(getDetail(employeeUuid, operatorUserId));
+            vo.setSalaries(loadSalaries(employeeUuid));
+            vo.setAccounts(listAccounts(employeeUuid, operatorUserId));
+            vo.setAssignments(toAssignmentVos(employeeAssignmentRecordDao.selectByEmployeeUuid(employeeUuid)));
+            vo.setInterviews(listInterviews(employeeUuid, operatorUserId));
+            vo.setAttachments(loadAttachments(employeeUuid));
+            return vo;
         }
-        vo.setSalaries(salaries);
-
-        List<EmployeeSystemAccountVO> accounts = new ArrayList<>();
-        accounts.add(hrSystemAccountRow(requireConfirmedArchive(employeeUuid)));
-        List<EmployeeSystemAccountPo> accountRows = employeeSystemAccountDao.selectByEmployeeUuid(employeeUuid);
-        if (accountRows != null) {
-            for (EmployeeSystemAccountPo row : accountRows) {
-                accounts.add(toAccountVo(row, false));
-            }
+        requireConfirmedArchive(employeeUuid);
+        if (intersectsProfile(selected)) {
+            EmployeeArchiveDetailVO detail = getDetail(employeeUuid, operatorUserId);
+            retainPrintProfile(detail, selected);
+            vo.setBasicInfo(detail);
         }
-        vo.setAccounts(accounts);
-
-        List<EmployeeAssignmentRecordPo> assignmentRows = employeeAssignmentRecordDao.selectByEmployeeUuid(employeeUuid);
-        vo.setAssignments(toAssignmentVos(assignmentRows));
-
-        vo.setInterviews(listInterviews(employeeUuid, operatorUserId));
-
-
-        List<EmployeeContractAttachmentPo> attachmentRows = employeeContractAttachmentDao.selectByEmployeeUuid(employeeUuid);
-        List<EmployeeContractAttachmentVO> attachments = new ArrayList<>();
-        if (attachmentRows != null) {
-            for (EmployeeContractAttachmentPo row : attachmentRows) {
-                attachments.add(toAttachmentVo(row));
-            }
-        }
-        vo.setAttachments(attachments);
-
+        vo.setSalaries(selected.contains(PrintSection.SALARY) ? loadSalaries(employeeUuid) : List.of());
+        vo.setAccounts(selected.contains(PrintSection.ACCOUNT)
+                ? listAccounts(employeeUuid, operatorUserId) : List.of());
+        vo.setAssignments(selected.contains(PrintSection.ASSIGNMENT)
+                ? toAssignmentVos(employeeAssignmentRecordDao.selectByEmployeeUuid(employeeUuid)) : List.of());
+        vo.setInterviews(selected.contains(PrintSection.INTERVIEW)
+                ? listInterviews(employeeUuid, operatorUserId) : List.of());
+        vo.setContracts(selected.contains(PrintSection.CONTRACT) ? loadContracts(employeeUuid) : List.of());
+        vo.setAttachments(selected.contains(PrintSection.ATTACHMENT)
+                ? loadAttachments(employeeUuid) : List.of());
         return vo;
     }
 
@@ -495,7 +659,9 @@ public class EmployeeArchiveServiceImpl implements EmployeeArchiveService {
         ContractSignType signType = ContractSignType.fromCode(row.getSignType());
         vo.setSignType(signType != null ? signType.getCode() : row.getSignType());
         vo.setSignTypeLabel(signType != null ? signType.getLabel() : row.getSignType());
-        vo.setContractTermType(row.getContractTermType());
+        ContractTermType termType = ContractTermType.fromCode(row.getContractTermType());
+        vo.setContractTermType(termType != null ? termType.getCode() : row.getContractTermType());
+        vo.setContractTermTypeLabel(termType != null ? termType.getLabel() : row.getContractTermType());
         vo.setStartDate(row.getStartDate());
         vo.setEndDate(row.getEndDate());
         vo.setSalary(row.getSalary());
@@ -855,6 +1021,7 @@ public class EmployeeArchiveServiceImpl implements EmployeeArchiveService {
         if (source == null || source.isEmpty()) {
             return result;
         }
+        LocalDate today = LocalDate.now(clock.withZone(TimeConfig.BUSINESS_ZONE));
         for (int i = 0; i < source.size(); i++) {
             EmployeeAssignmentRecordPo item = source.get(i);
             EmployeeAssignmentRecordVO vo = new EmployeeAssignmentRecordVO();
@@ -863,6 +1030,7 @@ public class EmployeeArchiveServiceImpl implements EmployeeArchiveService {
             vo.setEventDate(item.getEventDate());
             vo.setCompanyName(item.getCompanyName());
             vo.setUtilizationRate(item.getUtilizationRate());
+            vo.setOperatorName(item.getOperatorName());
             vo.setRemark(item.getRemark());
             if (AssignmentType.ENTER.getCode().equals(item.getAssignmentType()) && item.getEventDate() != null) {
                 vo.setStartDate(item.getEventDate());
@@ -871,6 +1039,8 @@ public class EmployeeArchiveServiceImpl implements EmployeeArchiveService {
                 boolean inProgress = endDate == null;
                 vo.setInProgress(inProgress);
                 vo.setDurationText(inProgress ? "进行中" : formatDuration(item.getEventDate(), endDate));
+                LocalDate dayEnd = inProgress ? today : endDate;
+                vo.setUtilizationDays(utilizationDays(item.getEventDate(), dayEnd));
             }
             result.add(vo);
         }
@@ -898,6 +1068,8 @@ public class EmployeeArchiveServiceImpl implements EmployeeArchiveService {
         long projectCount = 0;
         long inProgressCount = 0;
         Period accumulated = Period.ZERO;
+        BigDecimal weightedRate = BigDecimal.ZERO;
+        long ratedDays = 0;
         for (EmployeeAssignmentRecordVO record : records) {
             if (record.getAssignmentType() != AssignmentType.ENTER || record.getStartDate() == null) {
                 continue;
@@ -911,10 +1083,18 @@ public class EmployeeArchiveServiceImpl implements EmployeeArchiveService {
             if (end != null) {
                 accumulated = accumulated.plus(Period.between(record.getStartDate(), end));
             }
+            if (record.getUtilizationRate() != null) {
+                int days = record.getUtilizationDays() == null ? 0 : record.getUtilizationDays();
+                weightedRate = weightedRate.add(record.getUtilizationRate().multiply(BigDecimal.valueOf(days)));
+                ratedDays += days;
+            }
         }
         summary.setProjectCount(projectCount);
         summary.setInProgressCount(inProgressCount);
         summary.setAccumulatedDurationText(formatDuration(accumulated.normalized()));
+        summary.setAccumulatedUtilizationRate(ratedDays == 0
+                ? null
+                : weightedRate.divide(BigDecimal.valueOf(ratedDays), 2, RoundingMode.HALF_UP));
         return summary;
     }
 
@@ -955,6 +1135,7 @@ public class EmployeeArchiveServiceImpl implements EmployeeArchiveService {
         result.setAccountUuid(source.getAccountUuid());
         result.setSystemName(source.getSystemName());
         result.setAccountName(source.getAccountName());
+        result.setPassword(source.getPassword());
         result.setOpenedAt(source.getOpenedAt());
         result.setReadonly(readonly);
         return result;
@@ -984,5 +1165,148 @@ public class EmployeeArchiveServiceImpl implements EmployeeArchiveService {
 
     private static String trimToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private static String cleanInterviewContent(String content) {
+        if (content == null || content.isBlank()) {
+            return null;
+        }
+        return Jsoup.clean(content, Safelist.basic());
+    }
+
+    private EmployeeInterviewPo requireInterview(String employeeUuid, String interviewUuid) {
+        if (interviewUuid == null || interviewUuid.isBlank()) {
+            throw ApiException.badRequest("面谈记录 UUID 不能为空");
+        }
+        try {
+            UUID.fromString(interviewUuid);
+        } catch (IllegalArgumentException exception) {
+            throw ApiException.badRequest("面谈记录 UUID 格式不正确");
+        }
+        EmployeeInterviewPo existing = employeeInterviewDao.selectByUuid(interviewUuid);
+        if (existing == null || !employeeUuid.equals(existing.getEmployeeUuid())) {
+            throw ApiException.notFound("面谈记录不存在");
+        }
+        return existing;
+    }
+
+    private static Integer utilizationDays(LocalDate start, LocalDate end) {
+        if (start == null || end == null) {
+            return 0;
+        }
+        long days = ChronoUnit.DAYS.between(start, end);
+        if (days <= 0 || days > Integer.MAX_VALUE) {
+            return 0;
+        }
+        return (int) days;
+    }
+
+    private List<EmployeeSalaryRecordVO> loadSalaries(String employeeUuid) {
+        List<EmployeeSalaryRecordVO> salaries = new ArrayList<>();
+        List<EmployeeSalaryRecordPo> salaryRows = employeeSalaryRecordDao.selectByEmployeeUuid(employeeUuid);
+        if (salaryRows != null) {
+            for (EmployeeSalaryRecordPo row : salaryRows) {
+                salaries.add(toSalaryVo(row));
+            }
+        }
+        return salaries;
+    }
+
+    private List<EmployeeContractVO> loadContracts(String employeeUuid) {
+        List<EmployeeContractVO> result = new ArrayList<>();
+        List<EmployeeContractPo> rows = employeeContractDao.selectByEmployeeUuid(employeeUuid);
+        if (rows != null) {
+            for (EmployeeContractPo row : rows) {
+                result.add(toContractVo(row));
+            }
+        }
+        return result;
+    }
+
+    private List<EmployeeContractAttachmentVO> loadAttachments(String employeeUuid) {
+        List<EmployeeContractAttachmentVO> attachments = new ArrayList<>();
+        List<EmployeeContractAttachmentPo> rows = employeeContractAttachmentDao.selectByEmployeeUuid(employeeUuid);
+        if (rows != null) {
+            for (EmployeeContractAttachmentPo row : rows) {
+                attachments.add(toAttachmentVo(row));
+            }
+        }
+        return attachments;
+    }
+
+    private static final Set<PrintSection> PROFILE_SECTIONS = EnumSet.of(
+            PrintSection.BASIC, PrintSection.EXPERIENCE, PrintSection.FAMILY, PrintSection.EMERGENCY);
+
+    private static boolean intersectsProfile(Set<PrintSection> selected) {
+        for (PrintSection section : PROFILE_SECTIONS) {
+            if (selected.contains(section)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static Set<PrintSection> parseSections(List<String> sections) {
+        if (sections == null || sections.isEmpty()) {
+            return null;
+        }
+        Set<PrintSection> selected = EnumSet.noneOf(PrintSection.class);
+        boolean any = false;
+        for (String raw : sections) {
+            if (raw == null || raw.isBlank()) {
+                continue;
+            }
+            for (String token : raw.split(",")) {
+                String code = token.trim();
+                if (code.isEmpty()) {
+                    continue;
+                }
+                any = true;
+                PrintSection section = PrintSection.fromCode(code);
+                if (section == null) {
+                    throw ApiException.badRequest("未知的打印模块");
+                }
+                selected.add(section);
+            }
+        }
+        return any ? selected : null;
+    }
+
+    private static void retainPrintProfile(EmployeeArchiveDetailVO detail, Set<PrintSection> selected) {
+        if (!selected.contains(PrintSection.BASIC)) {
+            detail.setHeader(null);
+            detail.setEmployeeUuid(null);
+            detail.setEmail(null);
+            detail.setIdCard(null);
+            detail.setBirthDate(null);
+            detail.setMaritalStatus(null);
+            detail.setPoliticalStatus(null);
+            detail.setNationality(null);
+            detail.setEthnicity(null);
+            detail.setNativePlace(null);
+            detail.setHukouLocation(null);
+            detail.setCurrentAddress(null);
+            detail.setPostalCode(null);
+            detail.setHealthStatus(null);
+            detail.setHighestEducation(null);
+            detail.setMajor(null);
+            detail.setProfessionalTitle(null);
+            detail.setForeignLanguage(null);
+            detail.setHobbies(null);
+            detail.setWechatAccount(null);
+            detail.setPhotoPath(null);
+            detail.setPhotoUploaded(false);
+        }
+        if (!selected.contains(PrintSection.EXPERIENCE)) {
+            detail.setEducations(List.of());
+            detail.setWorkHistories(List.of());
+            detail.setTrainings(List.of());
+        }
+        if (!selected.contains(PrintSection.FAMILY)) {
+            detail.setFamilyMembers(List.of());
+        }
+        if (!selected.contains(PrintSection.EMERGENCY)) {
+            detail.setEmergencyContacts(List.of());
+        }
     }
 }

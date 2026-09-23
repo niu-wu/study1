@@ -12,6 +12,7 @@
         <result property="companyName" column="company_name"/>
         <result property="utilizationRate" column="utilization_rate"/>
         <result property="operatorUserId" column="operator_user_id"/>
+        <result property="operatorName" column="operator_name"/>
         <result property="remark" column="remark"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
@@ -33,9 +34,12 @@
     </insert>
 
     <select id="selectByEmployeeUuid" resultMap="EmployeeAssignmentRecordMap">
-        SELECT <include refid="BaseColumnList"/>
-        FROM `employee_assignment_record`
-        WHERE employee_uuid = #{employeeUuid}
-        ORDER BY event_date ASC, id ASC
+        SELECT a.assignment_uuid, a.id, a.employee_uuid, a.assignment_type, a.event_date,
+               a.company_name, a.utilization_rate, a.operator_user_id, a.remark,
+               a.created_at, a.updated_at, u.username AS operator_name
+        FROM `employee_assignment_record` a
+        LEFT JOIN `user` u ON u.id = a.operator_user_id
+        WHERE a.employee_uuid = #{employeeUuid}
+        ORDER BY a.event_date ASC, a.id ASC
     </select>
 </mapper>

@@ -1,32 +1,39 @@
 package com.example.study11.entity.dto;
 
+import com.example.study11.entity.enums.AttachmentType;
 import com.example.study11.exception.ApiException;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/** 登记一条外部系统账号。password 是该系统口令，可空，不是本系统登录密码。 */
+/** 登记一条合同/证件附件。只存文件名和地址，不接收文件流。地址可空。 */
 @Getter
 @Setter
-public class EmployeeSystemAccountSaveRequest {
+public class EmployeeContractAttachmentSaveRequest {
 
-    @NotBlank(message = "系统名称不能为空")
-    private String systemName;
+    @NotNull(message = "附件类型不能为空")
+    private AttachmentType attachmentType;
 
-    @NotBlank(message = "账号名不能为空")
-    private String accountName;
+    @NotBlank(message = "文件名不能为空")
+    @Size(max = 255, message = "文件名过长")
+    private String fileName;
 
-    @Size(max = 200, message = "密码过长")
-    private String password;
+    @Size(max = 500, message = "文件地址过长")
+    private String fileUrl;
 
-    private LocalDateTime openedAt;
+    @Size(max = 50, message = "文件类型过长")
+    private String fileType;
+
+    private Long fileSize;
+
+    private Integer sortOrder;
 
     @JsonIgnore
     private final Map<String, Object> unexpectedFields = new LinkedHashMap<>();

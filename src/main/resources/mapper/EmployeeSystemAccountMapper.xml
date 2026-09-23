@@ -9,6 +9,7 @@
         <result property="employeeUuid" column="employee_uuid"/>
         <result property="systemName" column="system_name"/>
         <result property="accountName" column="account_name"/>
+        <result property="password" column="password"/>
         <result property="openedAt" column="opened_at"/>
         <result property="operatorUserId" column="operator_user_id"/>
         <result property="createdAt" column="created_at"/>
@@ -16,17 +17,17 @@
     </resultMap>
 
     <sql id="BaseColumnList">
-        account_uuid, id, employee_uuid, system_name, account_name, opened_at,
+        account_uuid, id, employee_uuid, system_name, account_name, password, opened_at,
         operator_user_id, created_at, updated_at
     </sql>
 
     <insert id="insert" parameterType="com.example.study11.entity.po.EmployeeSystemAccountPo"
             useGeneratedKeys="true" keyProperty="id" keyColumn="id">
         INSERT INTO `employee_system_account`
-        (account_uuid, employee_uuid, system_name, account_name, opened_at,
+        (account_uuid, employee_uuid, system_name, account_name, password, opened_at,
          operator_user_id, created_at, updated_at)
         VALUES
-        (#{accountUuid}, #{employeeUuid}, #{systemName}, #{accountName}, #{openedAt},
+        (#{accountUuid}, #{employeeUuid}, #{systemName}, #{accountName}, #{password}, #{openedAt},
          #{operatorUserId}, #{createdAt}, #{updatedAt})
     </insert>
 

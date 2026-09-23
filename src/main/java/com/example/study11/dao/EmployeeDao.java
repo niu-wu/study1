@@ -5,6 +5,7 @@ import com.example.study11.entity.po.EmployeeArchiveStatisticsPo;
 import com.example.study11.entity.po.EmployeePo;
 import org.apache.ibatis.annotations.Param;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -40,4 +41,8 @@ public interface EmployeeDao {
     int updateArchiveFields(EmployeePo employeePo);
 
     int updateAssignmentState(EmployeePo employeePo);
+
+    int regularize(@Param("employeeUuid") String employeeUuid,
+                   @Param("regularizedAt") LocalDate regularizedAt,
+                   @Param("updatedAt") LocalDateTime updatedAt);
 }

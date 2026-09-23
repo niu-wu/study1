@@ -4,6 +4,8 @@ import com.example.study11.common.model.PageResult;
 import com.example.study11.entity.dto.EmployeeArchivePageRequest;
 import com.example.study11.entity.dto.EmployeeArchiveUpdateRequest;
 import com.example.study11.entity.dto.EmployeeAssignmentSaveRequest;
+import com.example.study11.entity.dto.EmployeeContractAttachmentSaveRequest;
+import com.example.study11.entity.dto.EmployeeContractSaveRequest;
 import com.example.study11.entity.dto.EmployeeInterviewSaveRequest;
 import com.example.study11.entity.dto.EmployeeSalarySaveRequest;
 import com.example.study11.entity.dto.EmployeeSystemAccountSaveRequest;
@@ -12,6 +14,8 @@ import com.example.study11.entity.vo.EmployeeArchiveListItemVO;
 import com.example.study11.entity.vo.EmployeeArchiveStatisticsVO;
 import com.example.study11.entity.vo.EmployeeAssignmentListVO;
 import com.example.study11.entity.vo.EmployeeAssignmentRecordVO;
+import com.example.study11.entity.vo.EmployeeContractAttachmentVO;
+import com.example.study11.entity.vo.EmployeeContractVO;
 import com.example.study11.entity.vo.EmployeeInterviewVO;
 import com.example.study11.entity.vo.EmployeePhotoFileVO;
 import com.example.study11.entity.vo.EmployeePrintPreviewVO;
@@ -55,5 +59,22 @@ public interface EmployeeArchiveService {
 
     List<EmployeeInterviewVO> listInterviews(String employeeUuid, Integer operatorUserId);
 
-    EmployeePrintPreviewVO getPrintPreview(String employeeUuid, Integer operatorUserId);
+    EmployeeInterviewVO updateInterview(String employeeUuid, String interviewUuid,
+                                        EmployeeInterviewSaveRequest request, Integer operatorUserId);
+
+    void deleteInterview(String employeeUuid, String interviewUuid, Integer operatorUserId);
+
+    List<EmployeeContractVO> listContracts(String employeeUuid, Integer operatorUserId);
+
+    EmployeeContractVO saveContract(String employeeUuid, EmployeeContractSaveRequest request,
+                                    Integer operatorUserId);
+
+    List<EmployeeContractAttachmentVO> listAttachments(String employeeUuid, Integer operatorUserId);
+
+    EmployeeContractAttachmentVO saveAttachment(String employeeUuid, EmployeeContractAttachmentSaveRequest request,
+                                                Integer operatorUserId);
+
+    EmployeeArchiveListItemVO regularize(String employeeUuid, Integer operatorUserId);
+
+    EmployeePrintPreviewVO getPrintPreview(String employeeUuid, List<String> sections, Integer operatorUserId);
 }

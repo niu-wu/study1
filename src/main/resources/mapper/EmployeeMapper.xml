@@ -242,4 +242,14 @@
         WHERE employee_uuid = #{employeeUuid}
           AND hr_confirmed_at IS NOT NULL
     </update>
+
+    <update id="regularize">
+        UPDATE `employee`
+        SET employment_status = 'REGULAR',
+            regularized_at = #{regularizedAt},
+            updated_at = #{updatedAt}
+        WHERE employee_uuid = #{employeeUuid}
+          AND hr_confirmed_at IS NOT NULL
+          AND employment_status = 'PROBATION'
+    </update>
 </mapper>

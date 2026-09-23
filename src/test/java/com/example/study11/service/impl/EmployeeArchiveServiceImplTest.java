@@ -18,15 +18,25 @@ import com.example.study11.dao.UserDao;
 import com.example.study11.entity.dto.EmployeeAssignmentSaveRequest;
 import com.example.study11.entity.dto.EmployeeArchivePageRequest;
 import com.example.study11.entity.dto.EmployeeArchiveUpdateRequest;
+import com.example.study11.entity.dto.EmployeeContractAttachmentSaveRequest;
+import com.example.study11.entity.dto.EmployeeContractSaveRequest;
+import com.example.study11.entity.dto.EmployeeInterviewSaveRequest;
 import com.example.study11.entity.dto.EmployeeSalarySaveRequest;
 import com.example.study11.entity.dto.EmployeeSystemAccountSaveRequest;
 import com.example.study11.entity.dto.EmployeeTrainingItemDTO;
 import com.example.study11.entity.enums.AssignmentType;
+import com.example.study11.entity.enums.AttachmentType;
+import com.example.study11.entity.enums.ContractSignType;
+import com.example.study11.entity.enums.ContractTermType;
 import com.example.study11.entity.enums.EmploymentStatus;
 import com.example.study11.entity.enums.EmploymentType;
+import com.example.study11.entity.enums.InterviewType;
 import com.example.study11.entity.enums.WorkLocation;
 import com.example.study11.entity.po.EmployeeArchiveStatisticsPo;
 import com.example.study11.entity.po.EmployeeAssignmentRecordPo;
+import com.example.study11.entity.po.EmployeeContractAttachmentPo;
+import com.example.study11.entity.po.EmployeeContractPo;
+import com.example.study11.entity.po.EmployeeInterviewPo;
 import com.example.study11.entity.po.EmployeePo;
 import com.example.study11.entity.po.EmployeeSalaryRecordPo;
 import com.example.study11.entity.po.EmployeeSystemAccountPo;
@@ -37,6 +47,10 @@ import com.example.study11.entity.vo.EmployeeArchiveListItemVO;
 import com.example.study11.entity.vo.EmployeeArchiveStatisticsVO;
 import com.example.study11.entity.vo.EmployeeAssignmentListVO;
 import com.example.study11.entity.vo.EmployeeAssignmentRecordVO;
+import com.example.study11.entity.vo.EmployeeContractAttachmentVO;
+import com.example.study11.entity.vo.EmployeeContractVO;
+import com.example.study11.entity.vo.EmployeeInterviewVO;
+import com.example.study11.entity.vo.EmployeePrintPreviewVO;
 import com.example.study11.entity.vo.EmployeePhotoFileVO;
 import com.example.study11.entity.vo.EmployeeSalaryListVO;
 import com.example.study11.entity.vo.EmployeeSalaryRecordVO;
@@ -755,26 +769,33 @@ class EmployeeArchiveServiceImplTest {
         assertEquals(3, result.getRecords().size());
         assertEquals(LocalDate.of(2026, 4, 15), result.getRecords().get(0).getEndDate());
         assertEquals("3个月", result.getRecords().get(0).getDurationText());
+        assertEquals(90, result.getRecords().get(0).getUtilizationDays());
+        assertNull(result.getRecords().get(1).getUtilizationDays());
         assertTrue(result.getRecords().get(2).isInProgress());
         assertEquals("进行中", result.getRecords().get(2).getDurationText());
+        assertEquals(14, result.getRecords().get(2).getUtilizationDays());
         assertEquals(2, result.getSummary().getProjectCount());
         assertEquals(1, result.getSummary().getInProgressCount());
         assertEquals("3个月14天", result.getSummary().getAccumulatedDurationText());
+        assertNull(result.getSummary().getAccumulatedUtilizationRate());
     }
 
     @Test
-    void saveAccountRejectsPassword() {
+    void saveAccountStoresPlainPassword() {
+        when(employeeDao.selectByEmployeeUuidForUpdate(EMPLOYEE_UUID)).thenReturn(confirmedEmployee());
+        when(employeeSystemAccountDao.insert(any())).thenReturn(1);
+
         EmployeeSystemAccountSaveRequest request = new EmployeeSystemAccountSaveRequest();
         request.setSystemName("企业邮箱");
         request.setAccountName("a@b.com");
-        request.captureUnexpectedField("password", "secret");
+        request.setPassword("  secret  ");
 
-        ApiException exception = assertThrows(ApiException.class,
-                () -> service.saveAccount(EMPLOYEE_UUID, request, 7));
+        EmployeeSystemAccountVO result = service.saveAccount(EMPLOYEE_UUID, request, 7);
 
-        assertEquals(400, exception.getStatus().value());
-        assertEquals("password 不允许传入", exception.getMessage());
-        verify(employeeSystemAccountDao, never()).insert(any());
+        ArgumentCaptor<EmployeeSystemAccountPo> captor = ArgumentCaptor.forClass(EmployeeSystemAccountPo.class);
+        verify(employeeSystemAccountDao).insert(captor.capture());
+        assertEquals("secret", captor.getValue().getPassword());
+        assertEquals("secret", result.getPassword());
     }
 
     @Test
@@ -789,6 +810,7 @@ class EmployeeArchiveServiceImplTest {
         manual.setAccountUuid("acc-1");
         manual.setSystemName("企业邮箱");
         manual.setAccountName("zhangsan@company.com");
+        manual.setPassword("secret");
         when(employeeSystemAccountDao.selectByEmployeeUuid(EMPLOYEE_UUID)).thenReturn(List.of(manual));
 
         List<EmployeeSystemAccountVO> result = service.listAccounts(EMPLOYEE_UUID, 7);
@@ -797,11 +819,249 @@ class EmployeeArchiveServiceImplTest {
         assertEquals("人力资源系统", result.get(0).getSystemName());
         assertEquals("zhangsan", result.get(0).getAccountName());
         assertTrue(result.get(0).isReadonly());
+        assertNull(result.get(0).getPassword());
         assertEquals("企业邮箱", result.get(1).getSystemName());
         assertEquals("acc-1", result.get(1).getAccountUuid());
-        for (var field : EmployeeSystemAccountVO.class.getDeclaredFields()) {
-            assertTrue(!"password".equalsIgnoreCase(field.getName()));
-        }
+        assertEquals("secret", result.get(1).getPassword());
+    }
+
+    @Test
+    void saveInterviewCleansHtmlAndRecordsHandler() {
+        when(employeeDao.selectByEmployeeUuidForUpdate(EMPLOYEE_UUID)).thenReturn(confirmedEmployee());
+        when(employeeInterviewDao.insert(any())).thenReturn(1);
+        UserPo handler = new UserPo();
+        handler.setUsername("hr01");
+        when(userDao.selectUserById(7)).thenReturn(handler);
+
+        EmployeeInterviewSaveRequest request = new EmployeeInterviewSaveRequest();
+        request.setInterviewType(InterviewType.ONBOARDING);
+        request.setInterviewTime(LocalDateTime.of(2026, 9, 19, 10, 0));
+        request.setContent("<p>入职面谈</p><script>alert(1)</script>");
+
+        EmployeeInterviewVO result = service.saveInterview(EMPLOYEE_UUID, request, 7);
+
+        ArgumentCaptor<EmployeeInterviewPo> captor = ArgumentCaptor.forClass(EmployeeInterviewPo.class);
+        verify(employeeInterviewDao).insert(captor.capture());
+        EmployeeInterviewPo saved = captor.getValue();
+        assertEquals(EMPLOYEE_UUID, saved.getEmployeeUuid());
+        assertEquals(InterviewType.ONBOARDING.getCode(), saved.getInterviewType());
+        assertEquals(7, saved.getHandlerUserId());
+        assertEquals(7, saved.getCreatedBy());
+        assertTrue(saved.getContent().contains("入职面谈"));
+        assertTrue(!saved.getContent().contains("script"));
+        assertEquals(InterviewType.ONBOARDING, result.getInterviewType());
+        assertEquals("入职", result.getInterviewTypeLabel());
+        assertEquals("hr01", result.getHandlerName());
+    }
+
+    @Test
+    void saveInterviewRejectsHandlerUserId() {
+        EmployeeInterviewSaveRequest request = new EmployeeInterviewSaveRequest();
+        request.setInterviewType(InterviewType.INTERVIEW);
+        request.setInterviewTime(LocalDateTime.of(2026, 9, 19, 10, 0));
+        request.captureUnexpectedField("handlerUserId", 99);
+
+        ApiException exception = assertThrows(ApiException.class,
+                () -> service.saveInterview(EMPLOYEE_UUID, request, 7));
+
+        assertEquals(400, exception.getStatus().value());
+        assertEquals("handlerUserId 不允许传入", exception.getMessage());
+        verify(employeeInterviewDao, never()).insert(any());
+    }
+
+    @Test
+    void listInterviewsMapsTypeLabel() {
+        when(employeeDao.selectByEmployeeUuid(EMPLOYEE_UUID)).thenReturn(confirmedEmployee());
+        EmployeeInterviewPo row = new EmployeeInterviewPo();
+        row.setInterviewUuid("int-1");
+        row.setEmployeeUuid(EMPLOYEE_UUID);
+        row.setInterviewType(InterviewType.RETEST.getCode());
+        row.setInterviewTime(LocalDateTime.of(2026, 9, 18, 15, 0));
+        row.setHandlerName("hr01");
+        when(employeeInterviewDao.selectByEmployeeUuid(EMPLOYEE_UUID)).thenReturn(List.of(row));
+
+        List<EmployeeInterviewVO> result = service.listInterviews(EMPLOYEE_UUID, 7);
+
+        assertEquals(1, result.size());
+        assertEquals("int-1", result.get(0).getInterviewUuid());
+        assertEquals(InterviewType.RETEST, result.get(0).getInterviewType());
+        assertEquals("复试", result.get(0).getInterviewTypeLabel());
+        assertEquals("hr01", result.get(0).getHandlerName());
+    }
+
+    @Test
+    void updateInterviewChangesTypeTimeAndContentButNotHandler() {
+        when(employeeDao.selectByEmployeeUuidForUpdate(EMPLOYEE_UUID)).thenReturn(confirmedEmployee());
+        EmployeeInterviewPo existing = new EmployeeInterviewPo();
+        existing.setInterviewUuid("6ba7b810-9dad-11d1-80b4-00c04fd430c8");
+        existing.setEmployeeUuid(EMPLOYEE_UUID);
+        existing.setInterviewType(InterviewType.INTERVIEW.getCode());
+        existing.setHandlerUserId(3);
+        existing.setHandlerName("hr01");
+        when(employeeInterviewDao.selectByUuid(existing.getInterviewUuid())).thenReturn(existing);
+        when(employeeInterviewDao.updateByUuid(any())).thenReturn(1);
+
+        EmployeeInterviewSaveRequest request = new EmployeeInterviewSaveRequest();
+        request.setInterviewType(InterviewType.PROBATION_CONFIRM);
+        request.setInterviewTime(LocalDateTime.of(2026, 9, 20, 9, 0));
+        request.setContent("<p>转正</p><script>x</script>");
+
+        EmployeeInterviewVO result = service.updateInterview(EMPLOYEE_UUID, existing.getInterviewUuid(), request, 7);
+
+        ArgumentCaptor<EmployeeInterviewPo> captor = ArgumentCaptor.forClass(EmployeeInterviewPo.class);
+        verify(employeeInterviewDao).updateByUuid(captor.capture());
+        assertEquals(InterviewType.PROBATION_CONFIRM.getCode(), captor.getValue().getInterviewType());
+        assertEquals("<p>转正</p>", captor.getValue().getContent());
+        assertEquals(3, captor.getValue().getHandlerUserId());
+        assertEquals("hr01", result.getHandlerName());
+    }
+
+    @Test
+    void deleteInterviewRejectsRecordOfAnotherEmployee() {
+        when(employeeDao.selectByEmployeeUuidForUpdate(EMPLOYEE_UUID)).thenReturn(confirmedEmployee());
+        EmployeeInterviewPo existing = new EmployeeInterviewPo();
+        existing.setInterviewUuid("6ba7b810-9dad-11d1-80b4-00c04fd430c8");
+        existing.setEmployeeUuid("11111111-1111-1111-1111-111111111111");
+        when(employeeInterviewDao.selectByUuid(existing.getInterviewUuid())).thenReturn(existing);
+
+        ApiException exception = assertThrows(ApiException.class,
+                () -> service.deleteInterview(EMPLOYEE_UUID, existing.getInterviewUuid(), 7));
+
+        assertEquals(404, exception.getStatus().value());
+        verify(employeeInterviewDao, never()).deleteByUuid(any());
+    }
+
+    @Test
+    void listAssignmentsWeightsUtilizationRateByDays() {
+        when(employeeDao.selectByEmployeeUuid(EMPLOYEE_UUID)).thenReturn(confirmedEmployee());
+        EmployeeAssignmentRecordPo first = assignmentPo("a1", AssignmentType.ENTER, LocalDate.of(2026, 1, 15), "甲");
+        first.setUtilizationRate(new BigDecimal("80.00"));
+        first.setOperatorName("hr01");
+        EmployeeAssignmentRecordPo back = assignmentPo("a2", AssignmentType.RETURN, LocalDate.of(2026, 1, 25), null);
+        EmployeeAssignmentRecordPo current = assignmentPo("a3", AssignmentType.ENTER, LocalDate.of(2026, 9, 1), "乙");
+        current.setUtilizationRate(new BigDecimal("50.00"));
+        when(employeeAssignmentRecordDao.selectByEmployeeUuid(EMPLOYEE_UUID))
+                .thenReturn(List.of(first, back, current));
+
+        EmployeeAssignmentListVO result = service.listAssignments(EMPLOYEE_UUID, 7);
+
+        assertEquals("hr01", result.getRecords().get(0).getOperatorName());
+        assertEquals(10, result.getRecords().get(0).getUtilizationDays());
+        assertEquals(14, result.getRecords().get(2).getUtilizationDays());
+        assertEquals(new BigDecimal("62.50"), result.getSummary().getAccumulatedUtilizationRate());
+    }
+
+    @Test
+    void accumulatedUtilizationRateIsNullWhenRatedDaysAreZero() {
+        when(employeeDao.selectByEmployeeUuid(EMPLOYEE_UUID)).thenReturn(confirmedEmployee());
+        EmployeeAssignmentRecordPo enter = assignmentPo("a1", AssignmentType.ENTER, LocalDate.of(2026, 9, 15), "甲");
+        enter.setUtilizationRate(new BigDecimal("100.00"));
+        EmployeeAssignmentRecordPo back = assignmentPo("a2", AssignmentType.RETURN, LocalDate.of(2026, 9, 15), null);
+        when(employeeAssignmentRecordDao.selectByEmployeeUuid(EMPLOYEE_UUID)).thenReturn(List.of(enter, back));
+
+        EmployeeAssignmentListVO result = service.listAssignments(EMPLOYEE_UUID, 7);
+
+        assertEquals(0, result.getRecords().get(0).getUtilizationDays());
+        assertNull(result.getSummary().getAccumulatedUtilizationRate());
+    }
+
+    @Test
+    void saveContractDefaultsTermAndStatusAndRejectsEndDateOnUnlimited() {
+        when(employeeDao.selectByEmployeeUuidForUpdate(EMPLOYEE_UUID)).thenReturn(confirmedEmployee());
+        when(employeeContractDao.insert(any())).thenReturn(1);
+        EmployeeContractSaveRequest request = new EmployeeContractSaveRequest();
+        request.setSignType(ContractSignType.NEW);
+
+        EmployeeContractVO created = service.saveContract(EMPLOYEE_UUID, request, 7);
+
+        ArgumentCaptor<EmployeeContractPo> captor = ArgumentCaptor.forClass(EmployeeContractPo.class);
+        verify(employeeContractDao).insert(captor.capture());
+        assertEquals(ContractTermType.FIXED.getCode(), captor.getValue().getContractTermType());
+        assertEquals("EXECUTING", captor.getValue().getContractStatus());
+        assertEquals("有固定期限", created.getContractTermTypeLabel());
+
+        EmployeeContractSaveRequest unlimited = new EmployeeContractSaveRequest();
+        unlimited.setSignType(ContractSignType.RENEWAL);
+        unlimited.setContractTermType(ContractTermType.UNLIMITED);
+        unlimited.setEndDate(LocalDate.of(2027, 1, 1));
+        ApiException exception = assertThrows(ApiException.class,
+                () -> service.saveContract(EMPLOYEE_UUID, unlimited, 7));
+        assertEquals("无固定期限合同不能填写到期日", exception.getMessage());
+    }
+
+    @Test
+    void saveAttachmentStoresBlankUrlAsEmptyString() {
+        when(employeeDao.selectByEmployeeUuidForUpdate(EMPLOYEE_UUID)).thenReturn(confirmedEmployee());
+        when(employeeContractAttachmentDao.insert(any())).thenReturn(1);
+        EmployeeContractAttachmentSaveRequest request = new EmployeeContractAttachmentSaveRequest();
+        request.setAttachmentType(AttachmentType.NDA);
+        request.setFileName("保密协议.pdf");
+        request.setFileUrl("  ");
+
+        EmployeeContractAttachmentVO result = service.saveAttachment(EMPLOYEE_UUID, request, 7);
+
+        ArgumentCaptor<EmployeeContractAttachmentPo> captor = ArgumentCaptor.forClass(EmployeeContractAttachmentPo.class);
+        verify(employeeContractAttachmentDao).insert(captor.capture());
+        assertEquals("", captor.getValue().getFileUrl());
+        assertEquals("", result.getFileUrl());
+        assertEquals("保密协议", result.getAttachmentTypeLabel());
+    }
+
+    @Test
+    void regularizeSetsRegularStatusAndToday() {
+        when(employeeDao.selectByEmployeeUuidForUpdate(EMPLOYEE_UUID)).thenReturn(confirmedEmployee());
+        when(employeeDao.regularize(eq(EMPLOYEE_UUID), eq(LocalDate.of(2026, 9, 15)), any())).thenReturn(1);
+
+        EmployeeArchiveListItemVO result = service.regularize(EMPLOYEE_UUID, 7);
+
+        assertEquals(EmploymentStatus.REGULAR, result.getEmploymentStatus());
+        assertEquals(LocalDate.of(2026, 9, 15), result.getRegularizedAt());
+    }
+
+    @Test
+    void regularizeRejectsEmployeeWhoIsNotOnProbation() {
+        EmployeePo resigned = confirmedEmployee();
+        resigned.setEmploymentStatus(EmploymentStatus.RESIGNED.getCode());
+        when(employeeDao.selectByEmployeeUuidForUpdate(EMPLOYEE_UUID)).thenReturn(resigned);
+
+        ApiException exception = assertThrows(ApiException.class, () -> service.regularize(EMPLOYEE_UUID, 7));
+
+        assertEquals("只有试用员工可以办理转正", exception.getMessage());
+        verify(employeeDao, never()).regularize(any(), any(), any());
+    }
+
+    @Test
+    void printPreviewWithoutSectionsDoesNotLoadContracts() {
+        when(employeeDao.selectByEmployeeUuid(EMPLOYEE_UUID)).thenReturn(confirmedEmployee());
+
+        EmployeePrintPreviewVO preview = service.getPrintPreview(EMPLOYEE_UUID, null, 7);
+
+        assertNull(preview.getContracts());
+        verify(employeeContractDao, never()).selectByEmployeeUuid(any());
+        assertTrue(preview.getBasicInfo() != null);
+    }
+
+    @Test
+    void printPreviewSectionsLeaveUnselectedBlocksEmpty() {
+        when(employeeDao.selectByEmployeeUuid(EMPLOYEE_UUID)).thenReturn(confirmedEmployee());
+        EmployeeTrainingPo training = new EmployeeTrainingPo();
+        training.setCourseContent("Java");
+        when(employeeTrainingDao.selectByEmployeeUuid(EMPLOYEE_UUID)).thenReturn(List.of(training));
+
+        EmployeePrintPreviewVO salaryOnly = service.getPrintPreview(EMPLOYEE_UUID, List.of("salary"), 7);
+        assertNull(salaryOnly.getBasicInfo());
+        assertTrue(salaryOnly.getSalaries().isEmpty());
+        assertTrue(salaryOnly.getContracts().isEmpty());
+        verify(employeeContractDao, never()).selectByEmployeeUuid(any());
+
+        EmployeePrintPreviewVO experience = service.getPrintPreview(EMPLOYEE_UUID, List.of("experience"), 7);
+        assertNull(experience.getBasicInfo().getHeader());
+        assertEquals(1, experience.getBasicInfo().getTrainings().size());
+        assertTrue(experience.getBasicInfo().getFamilyMembers().isEmpty());
+
+        ApiException exception = assertThrows(ApiException.class,
+                () -> service.getPrintPreview(EMPLOYEE_UUID, List.of("attendance"), 7));
+        assertEquals("未知的打印模块", exception.getMessage());
     }
 
     private static EmployeeAssignmentRecordPo assignmentPo(String uuid, AssignmentType type, LocalDate eventDate,

@@ -26,6 +26,9 @@ public class EmployeeAssignmentRecordPo {
 
     private Integer operatorUserId;
 
+    /** 非数据库字段：JOIN user 表带出的经办人登录名。 */
+    private String operatorName;
+
     private String remark;
 
     private LocalDateTime createdAt;

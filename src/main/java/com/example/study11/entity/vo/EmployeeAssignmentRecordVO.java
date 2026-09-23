@@ -20,6 +20,12 @@ public class EmployeeAssignmentRecordVO {
 
     private BigDecimal utilizationRate;
 
+    /** 经办人登录名。用户表没有姓名列。 */
+    private String operatorName;
+
+    /** 结束日减开始日，不含结束日当天。进行中用今天。 */
+    private Integer utilizationDays;
+
     private LocalDate startDate;
 
     private LocalDate endDate;

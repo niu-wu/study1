@@ -4,7 +4,7 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
-/** 员工系统账号。不返回密码。 */
+/** 员工外部系统账号。password 是该系统的口令，不是本系统登录密码。 */
 @Data
 public class EmployeeSystemAccountVO {
 
@@ -13,6 +13,8 @@ public class EmployeeSystemAccountVO {
     private String systemName;
 
     private String accountName;
+
+    private String password;
 
     private LocalDateTime openedAt;
 

@@ -4,6 +4,8 @@ import com.example.study11.common.model.PageResult;
 import com.example.study11.entity.dto.EmployeeArchivePageRequest;
 import com.example.study11.entity.dto.EmployeeArchiveUpdateRequest;
 import com.example.study11.entity.dto.EmployeeAssignmentSaveRequest;
+import com.example.study11.entity.dto.EmployeeContractAttachmentSaveRequest;
+import com.example.study11.entity.dto.EmployeeContractSaveRequest;
 import com.example.study11.entity.dto.EmployeeInterviewSaveRequest;
 import com.example.study11.entity.dto.EmployeeSalarySaveRequest;
 import com.example.study11.entity.dto.EmployeeSystemAccountSaveRequest;
@@ -12,6 +14,8 @@ import com.example.study11.entity.vo.EmployeeArchiveListItemVO;
 import com.example.study11.entity.vo.EmployeeArchiveStatisticsVO;
 import com.example.study11.entity.vo.EmployeeAssignmentListVO;
 import com.example.study11.entity.vo.EmployeeAssignmentRecordVO;
+import com.example.study11.entity.vo.EmployeeContractAttachmentVO;
+import com.example.study11.entity.vo.EmployeeContractVO;
 import com.example.study11.entity.vo.EmployeeInterviewVO;
 import com.example.study11.entity.vo.EmployeePhotoFileVO;
 import com.example.study11.entity.vo.EmployeePrintPreviewVO;
@@ -31,13 +35,16 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.nio.charset.StandardCharsets;
@@ -165,12 +172,81 @@ public class EmployeeArchiveController {
                 .body(employeeArchiveService.saveInterview(employeeUuid, request, currentUserId(httpRequest)));
     }
 
+    @PutMapping("/{employeeUuid}/interviews/{interviewUuid}")
+    public ResponseEntity<EmployeeInterviewVO> updateInterview(
+            @PathVariable @Pattern(regexp = RecruitmentRequestValidator.UUID_REGEX,
+                    message = "员工档案 UUID 格式不正确") String employeeUuid,
+            @PathVariable @Pattern(regexp = RecruitmentRequestValidator.UUID_REGEX,
+                    message = "面谈记录 UUID 格式不正确") String interviewUuid,
+            @RequestBody @Valid EmployeeInterviewSaveRequest request,
+            HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(employeeArchiveService.updateInterview(
+                employeeUuid, interviewUuid, request, currentUserId(httpRequest)));
+    }
+
+    @DeleteMapping("/{employeeUuid}/interviews/{interviewUuid}")
+    public ResponseEntity<Void> deleteInterview(
+            @PathVariable @Pattern(regexp = RecruitmentRequestValidator.UUID_REGEX,
+                    message = "员工档案 UUID 格式不正确") String employeeUuid,
+            @PathVariable @Pattern(regexp = RecruitmentRequestValidator.UUID_REGEX,
+                    message = "面谈记录 UUID 格式不正确") String interviewUuid,
+            HttpServletRequest httpRequest) {
+        employeeArchiveService.deleteInterview(employeeUuid, interviewUuid, currentUserId(httpRequest));
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{employeeUuid}/contracts")
+    public ResponseEntity<List<EmployeeContractVO>> listContracts(
+            @PathVariable @Pattern(regexp = RecruitmentRequestValidator.UUID_REGEX,
+                    message = "员工档案 UUID 格式不正确") String employeeUuid,
+            HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(employeeArchiveService.listContracts(employeeUuid, currentUserId(httpRequest)));
+    }
+
+    @PostMapping("/{employeeUuid}/contracts")
+    public ResponseEntity<EmployeeContractVO> saveContract(
+            @PathVariable @Pattern(regexp = RecruitmentRequestValidator.UUID_REGEX,
+                    message = "员工档案 UUID 格式不正确") String employeeUuid,
+            @RequestBody @Valid EmployeeContractSaveRequest request,
+            HttpServletRequest httpRequest) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(employeeArchiveService.saveContract(employeeUuid, request, currentUserId(httpRequest)));
+    }
+
+    @GetMapping("/{employeeUuid}/attachments")
+    public ResponseEntity<List<EmployeeContractAttachmentVO>> listAttachments(
+            @PathVariable @Pattern(regexp = RecruitmentRequestValidator.UUID_REGEX,
+                    message = "员工档案 UUID 格式不正确") String employeeUuid,
+            HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(employeeArchiveService.listAttachments(employeeUuid, currentUserId(httpRequest)));
+    }
+
+    @PostMapping("/{employeeUuid}/attachments")
+    public ResponseEntity<EmployeeContractAttachmentVO> saveAttachment(
+            @PathVariable @Pattern(regexp = RecruitmentRequestValidator.UUID_REGEX,
+                    message = "员工档案 UUID 格式不正确") String employeeUuid,
+            @RequestBody @Valid EmployeeContractAttachmentSaveRequest request,
+            HttpServletRequest httpRequest) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(employeeArchiveService.saveAttachment(employeeUuid, request, currentUserId(httpRequest)));
+    }
+
+    @PostMapping("/{employeeUuid}/regularization")
+    public ResponseEntity<EmployeeArchiveListItemVO> regularize(
+            @PathVariable @Pattern(regexp = RecruitmentRequestValidator.UUID_REGEX,
+                    message = "员工档案 UUID 格式不正确") String employeeUuid,
+            HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(employeeArchiveService.regularize(employeeUuid, currentUserId(httpRequest)));
+    }
+
     @GetMapping("/{employeeUuid}/print-preview")
     public ResponseEntity<EmployeePrintPreviewVO> printPreview(
             @PathVariable @Pattern(regexp = RecruitmentRequestValidator.UUID_REGEX,
                     message = "员工档案 UUID 格式不正确") String employeeUuid,
+            @RequestParam(required = false) List<String> sections,
             HttpServletRequest httpRequest) {
-        return ResponseEntity.ok(employeeArchiveService.getPrintPreview(employeeUuid, currentUserId(httpRequest)));
+        return ResponseEntity.ok(employeeArchiveService.getPrintPreview(
+                employeeUuid, sections, currentUserId(httpRequest)));
     }
 
     private static ResponseEntity<Resource> toPhotoResponse(EmployeePhotoFileVO photo) {
