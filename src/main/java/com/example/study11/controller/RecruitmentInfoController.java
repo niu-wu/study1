@@ -32,6 +32,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.List;
 
 /** 招聘信息基础 CRUD 接口。 */
@@ -95,6 +97,17 @@ public class RecruitmentInfoController {
     public ResponseEntity<RecruitmentInfoStatisticsVO> findStatistics(HttpServletRequest httpRequest) {
         requireHrOrAdmin(httpRequest);
         return ResponseEntity.ok(recruitmentInfoService.findStatistics());
+    }
+
+    @GetMapping("/export")
+    public void export(
+            @RequestParam(required = false) String applicantName,
+            @RequestParam(required = false) String position,
+            @RequestParam(required = false) String status,
+            HttpServletRequest request,
+            HttpServletResponse response) throws IOException {
+        requireHrOrAdmin(request);
+        recruitmentInfoService.export(applicantName, position, status, response);
     }
 
     @GetMapping("/{recordUuid}")

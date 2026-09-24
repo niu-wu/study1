@@ -6,7 +6,9 @@ import com.example.study11.entity.dto.RecruitmentInfoPageRequest;
 import com.example.study11.entity.dto.RecruitmentInfoUpdateDTO;
 import com.example.study11.entity.vo.RecruitmentInfoVO;
 import com.example.study11.entity.vo.RecruitmentInfoStatisticsVO;
+import jakarta.servlet.http.HttpServletResponse;
 
+import java.io.IOException;
 import java.util.List;
 
 /** 招聘信息业务接口。 */
@@ -27,4 +29,6 @@ public interface RecruitmentInfoService {
     RecruitmentInfoVO update(String recordUuid, RecruitmentInfoUpdateDTO request);
 
     void delete(String recordUuid);
+
+    void export(String applicantName, String position, String status, HttpServletResponse response) throws IOException;
 }

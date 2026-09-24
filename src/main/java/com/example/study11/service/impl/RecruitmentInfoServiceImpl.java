@@ -173,6 +173,39 @@ public class RecruitmentInfoServiceImpl implements RecruitmentInfoService {
         }
     }
 
+    @Override
+    public void export(String applicantName, String position, String status,
+                       jakarta.servlet.http.HttpServletResponse response) throws java.io.IOException {
+        List<RecruitmentInfoVO> list = findList(applicantName, position, status);
+        List<com.example.study11.entity.excel.RecruitmentInfoExportRow> rows = new java.util.ArrayList<>();
+        long serial = 1;
+        for (RecruitmentInfoVO vo : list) {
+            com.example.study11.entity.excel.RecruitmentInfoExportRow row = new com.example.study11.entity.excel.RecruitmentInfoExportRow();
+            row.setSerialNo(serial++);
+            row.setApplicantName(vo.getApplicantName());
+            row.setGender(vo.getGender());
+            row.setPosition(vo.getPosition());
+            row.setPhone(vo.getPhone());
+            row.setEmail(vo.getEmail());
+            row.setApplicationChannel(vo.getApplicationChannel());
+            row.setApplicationMethod(vo.getApplicationMethod());
+            row.setStatus(vo.getStatus());
+            row.setInitialContactPerson(vo.getInitialContactPerson());
+            row.setInitialInterviewTime(vo.getInitialInterviewTime());
+            row.setRetestContactPerson(vo.getRetestContactPerson());
+            row.setRetestInterviewTime(vo.getRetestInterviewTime());
+            rows.add(row);
+        }
+        String filename = "招聘信息-" + java.time.LocalDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss")) + ".xlsx";
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setCharacterEncoding("utf-8");
+        response.setHeader("Content-disposition",
+                "attachment;filename=" + java.net.URLEncoder.encode(filename, java.nio.charset.StandardCharsets.UTF_8));
+        com.alibaba.excel.EasyExcel.write(response.getOutputStream(), com.example.study11.entity.excel.RecruitmentInfoExportRow.class)
+                .sheet("招聘信息").doWrite(rows);
+    }
+
     private static void validateCreateRequest(RecruitmentInfoCreateDTO request) {
         if (request == null) {
             throw ApiException.badRequest("招聘信息不能为空");
